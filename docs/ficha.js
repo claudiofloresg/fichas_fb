@@ -154,9 +154,10 @@ const Ficha = (() => {
       xT = M + w + 14;
     }
     const eyebrow = ['FICHA DE JUGADOR', comp.label, jornadasTxt(comp)].filter(Boolean).join('   ·   ');
-    t(eyebrow.toUpperCase(), xT, 44, { font: f.bold, size: 8, color: C.gold, maxW: R - xT });
-    t(jug.nombre.toUpperCase(), xT, 71, { font: f.bold, size: 24, color: C.navy, maxW: R - xT, minSize: 14 });
-    l(M, 92, R, 92, C.navy, 2);
+       t(eyebrow.toUpperCase(), xT, 38, { font: f.bold, size: 8, color: C.gold, maxW: R - xT });
+       t(jug.nombre.toUpperCase(), xT, 64, { font: f.bold, size: 24, color: C.navy, maxW: R - xT, minSize: 14 });
+       t(jug.equipoCorto, xT, 81, { size: 10, color: C.soft, maxW: R - xT });
+       l(M, 96, R, 96, C.navy, 2);
 
     // ---------- foto
     const F = DISENO.foto;
@@ -185,7 +186,6 @@ const Ficha = (() => {
     const maxMin = comp.jornadas ? (comp.jornadas[1] - comp.jornadas[0] + 1) * 90 : null;
     bloque('DATOS DEL JUGADOR', DISENO.datos, [
       ['NUI', jug.nui],
-      ['Equipo', jug.equipoCorto],
       ['Posición', jug.posicion],
       ['Edad', jug.edad != null ? `${jug.edad} años` : null],
       ['Fecha de nacimiento', jug.nacimiento],
@@ -262,8 +262,8 @@ const Ficha = (() => {
       { size: 7, color: C.faint, maxW: 250 });
     t(`Datos al ${meta.generado.split(' ')[0]}`, R, yp + 12, { size: 7, color: C.faint, align: 'right' });
     const modoTxt = meta.modo === 'per90' ? 'valores por 90 minutos' : 'valores totales';
-    t(`Barra: valor del jugador respecto al máximo de toda la liga (${modoTxt}).`, P.w / 2, yp + 24,
-      { size: 6.5, color: C.faint, align: 'center', font: f.ital });
+    t(`Barra: valor del jugador respecto al máximo de toda la liga (${modoTxt}).`, M, yp + 24,
+      { size: 7, color: C.faint });
     t(DISENO.credito, P.w / 2, yp + 38, { font: f.bold, size: 8.5, color: C.navy, align: 'center' });
   }
 

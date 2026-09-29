@@ -84,7 +84,7 @@ def equipo_corto(eq):
 def etiqueta_competencia(stem, titulo_hoja):
     if stem in C.ETIQUETAS_COMPETENCIA:
         return C.ETIQUETAS_COMPETENCIA[stem]
-    t = re.sub(r"(?i)^matri[xz]_?jugadores_?", "", stem)
+    t = re.sub(r"(?i)^matri[xz][\s_]*jugadores[\s_]*", "", stem)
     t = re.sub(r"(?i)J\d+\s*-\s*J\d+", "", t)
     return re.sub(r"[_\s]+", " ", t).strip() or stem
 
