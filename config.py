@@ -16,9 +16,27 @@ Después de editar, corre  actualizar.bat  (Windows) o  ./actualizar.sh  (Mac/Li
 # Puedes usar rutas absolutas de tu compu, p. ej.:
 #   CARPETA_EXCEL = r"C:\Users\claudio\Drive\Scouting FB 26-27\Matrices"
 # Cada .xlsx dentro de CARPETA_EXCEL se vuelve una "Competencia" en la página.
-CARPETA_EXCEL = r"datos/excel"
-CARPETA_FOTOS = r"datos/fotos"          # se busca también en subcarpetas
-CARPETA_MAPAS = r"datos/mapas"          # mapas de calor, misma regla de nombres
+CARPETA_EXCEL = r"C:\Users\Servicio Social\fichas_fb\datos\excel"
+CARPETA_FOTOS = r"C:\Users\Servicio Social\fichas_fb\datos\fotos"
+CARPETA_MAPAS = r"C:\Users\Servicio Social\fichas_fb\datos\mapas"
+CARPETA_NUI = r"C:\Users\Servicio Social\fichas_fb\datos\nui"
+
+# =============================================================================
+# 1b) SOLO PUMAS
+# =============================================================================
+# Solo se generan fichas de los jugadores cuyo EQUIPO contenga este texto
+# (sin importar mayúsculas/acentos). Los máximos de las barras SIEMPRE se
+# calculan con TODA la liga.
+FILTRO_EQUIPO_FICHAS = "Universidad Nacional"
+# Cómo se muestra el equipo en la ficha: "Club Universidad Nacional Under 19" -> "Pumas UNAM U19"
+NOMBRE_EQUIPO_FICHA = "Pumas UNAM"
+
+# NUI: el programa busca sola la columna cuyo encabezado contenga "NUI" y la
+# del nombre ("JUGADOR", "NOMBRE" o "NOMBRE COMPLETO"). Si tu Excel usa otros
+# encabezados, escríbelos aquí. Si el nombre viene separado (Nombre / Apellido
+# paterno / Apellido materno) pon la lista de columnas en NUI_COLS_NOMBRE.
+NUI_COL_NUI = None                      # ej. "NUI"
+NUI_COLS_NOMBRE = None                  # ej. ["Nombre", "Apellido paterno", "Apellido materno"]
 
 # Nombre de la hoja y fila del encabezado real (GolStats: fila 3 => header=2)
 HOJA_EXCEL = 0                          # 0 = primera hoja, o "Matriz Jugadores"

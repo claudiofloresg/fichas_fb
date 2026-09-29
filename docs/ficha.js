@@ -9,12 +9,14 @@ const DISENO = {
     navy: '#0C2A4E', gold: '#B9902E', ink: '#12181E', soft: '#4B5560', faint: '#8B93A0',
     line: '#D5D9D2', track: '#E7E9E5', zebra: '#F6F7F4', placeholder: '#EEF0EC',
   },
-  // Color de cada sección (mismo criterio que los radares: Ofensiva azul, Posesión naranja, Defensiva rojo)
-  seccion: { 'Ofensiva': '#1A78CF', 'Posesión': '#FF9300', 'Defensiva': '#D70232' },
-  foto: { x: 36, y: 114, w: 150, h: 187.5 },
-  datos: { x: 202, w: 190 },
-  mapa: { x: 408, y: 114, w: 168, h: 187.5 },
-  secciones: { yIni: 318, yFin: 742, header: 24, gap: 6, filaMin: 14, filaMax: 22 },
+  // Colores de la ficha = colores del club: barras azul marino, líneas de sección oro
+  barra: '#0C2A4E',
+  lineaSeccion: '#B9902E',
+  foto: { x: 36, y: 112, w: 112, h: 140 },
+  datos: { x: 166, w: 110 },      // columna "Datos del jugador"
+  minutos: { x: 292, w: 104 },    // columna "Minutos de juego"
+  mapa: { x: 412, y: 112, w: 164, h: 140 },
+  secciones: { yIni: 272, yFin: 724, header: 24, gap: 6, filaMin: 14, filaMax: 22 },
   credito: 'Creado por Inteligencia Deportiva Pumas',
   fuente: 'GolStats',
 };
@@ -142,21 +144,19 @@ const Ficha = (() => {
     const { f } = ctx;
     const M = P.margen, R = P.w - M;
 
-    // ---------- encabezado
+    // ---------- encabezado (solo competencia + nombre; club/posición van en los datos)
     r(0, 0, P.w, 6, C.navy);
     r(0, 6, P.w, 2, hex(DISENO.colores.gold));
     let xT = M;
     if (ctx.logo) {
       const h = 54, w = ctx.logo.width * (h / ctx.logo.height);
-      page.drawImage(ctx.logo, { x: M, y: P.h - 24 - h, width: w, height: h });
+      page.drawImage(ctx.logo, { x: M, y: P.h - 22 - h, width: w, height: h });
       xT = M + w + 14;
     }
     const eyebrow = ['FICHA DE JUGADOR', comp.label, jornadasTxt(comp)].filter(Boolean).join('   ·   ');
-    t(eyebrow.toUpperCase(), xT, 38, { font: f.bold, size: 8, color: C.gold, maxW: R - xT });
-    t(jug.nombre.toUpperCase(), xT, 64, { font: f.bold, size: 24, color: C.navy, maxW: R - xT, minSize: 14 });
-    t([jug.equipoCorto, jug.posicion].filter(Boolean).join('   ·   '), xT, 81,
-      { size: 10, color: C.soft, maxW: R - xT });
-    l(M, 96, R, 96, C.navy, 2);
+    t(eyebrow.toUpperCase(), xT, 44, { font: f.bold, size: 8, color: C.gold, maxW: R - xT });
+    t(jug.nombre.toUpperCase(), xT, 71, { font: f.bold, size: 24, color: C.navy, maxW: R - xT, minSize: 14 });
+    l(M, 92, R, 92, C.navy, 2);
 
     // ---------- foto
     const F = DISENO.foto;
@@ -168,41 +168,39 @@ const Ficha = (() => {
     }
     r(F.x, F.y, F.w, F.h, undefined, { border: C.navy, bw: 1 });
 
-    // ---------- datos
-    const D = DISENO.datos, xR = D.x + D.w;
-    const bloque = (titulo, filas, y0) => {
-      t(titulo, D.x, y0 + 8, { font: f.bold, size: 8, color: C.navy });
-      l(D.x, y0 + 12, xR, y0 + 12, hex(DISENO.colores.gold), 1.2);
-      let y = y0 + 27;
+    // ---------- datos (etiqueta chica arriba, valor en negritas abajo)
+    const titulo = (txt, x, w, y0) => {
+      t(txt, x, y0 + 6, { font: f.bold, size: 8, color: C.navy, maxW: w });
+      l(x, y0 + 10, x + w, y0 + 10, hex(DISENO.colores.gold), 1.2);
+    };
+    const bloque = (txt, col, filas) => {
+      titulo(txt, col.x, col.w, F.y);
+      let y = F.y + 22;
       for (const [lab, val] of filas) {
-        t(lab, D.x, y, { size: 8.5, color: C.soft });
-        const wl = f.reg.widthOfTextAtSize(limpio(f.reg, lab), 8.5);
-        t(val ?? '–', xR, y, { font: f.bold, size: 10, align: 'right', maxW: D.w - wl - 8, minSize: 7 });
-        l(D.x, y + 4.5, xR, y + 4.5, C.line, 0.4);
-        y += 17;
+        t(lab, col.x, y, { size: 7, color: C.soft, maxW: col.w });
+        t(val ?? '–', col.x, y + 11.5, { font: f.bold, size: 10.5, color: C.ink, maxW: col.w, minSize: 7 });
+        y += 24.5;
       }
-      return y;
     };
     const maxMin = comp.jornadas ? (comp.jornadas[1] - comp.jornadas[0] + 1) * 90 : null;
-    const pctMin = maxMin ? `${Math.round((jug.minutos / maxMin) * 100)}%` : '–';
-    let y = bloque('DATOS DEL JUGADOR', [
+    bloque('DATOS DEL JUGADOR', DISENO.datos, [
+      ['NUI', jug.nui],
       ['Equipo', jug.equipoCorto],
-      ['Posición', jug.posicionExcel && jug.posicionExcel !== jug.posicion
-        ? `${jug.posicion} (${jug.posicionExcel})` : jug.posicion],
+      ['Posición', jug.posicion],
       ['Edad', jug.edad != null ? `${jug.edad} años` : null],
       ['Fecha de nacimiento', jug.nacimiento],
-    ], F.y - 2);
-    bloque('MINUTOS DE JUEGO', [
+    ]);
+    bloque('MINUTOS DE JUEGO', DISENO.minutos, [
       ['Minutos jugados', jug.minutos.toLocaleString('es-MX')],
       ['Partidos jugados', String(jug.partidos)],
-      ['Minutos por partido', jug.partidos ? String(Math.round(jug.minutos / jug.partidos)) : '–'],
-      [maxMin ? `% de minutos posibles (${jornadasTxt(comp)})` : '% de minutos posibles', pctMin],
-    ], y + 4);
+      ['Minutos por partido', jug.partidos ? String(Math.round(jug.minutos / jug.partidos)) : null],
+      [maxMin ? `% min. posibles (${jornadasTxt(comp)})` : '% de minutos posibles',
+        maxMin ? `${Math.round((jug.minutos / maxMin) * 100)}%` : null],
+    ]);
 
     // ---------- mapa de calor
     const Mp = DISENO.mapa;
-    t('MAPA DE CALOR', Mp.x, Mp.y + 6, { font: f.bold, size: 8, color: C.navy });
-    l(Mp.x, Mp.y + 10, Mp.x + Mp.w, Mp.y + 10, hex(DISENO.colores.gold), 1.2);
+    titulo('MAPA DE CALOR', Mp.x, Mp.w, Mp.y);
     const my = Mp.y + 16, mh = Mp.h - 16;
     const mapa = await img(ctx, jug.mapa);
     if (mapa) im(mapa, Mp.x, my, Mp.w, mh, true);
@@ -225,13 +223,13 @@ const Ficha = (() => {
       const fh = Math.max(S.filaMin, Math.min(S.filaMax, disp / nFilas));
       const xLab = M + 6, xVal = 262, xBar = 272, xBarEnd = 530, xMax = 538;
       for (const [sec, filas] of secs) {
-        const col = hex(DISENO.seccion[sec] || DISENO.colores.navy);
+        const col = hex(DISENO.barra), colLinea = hex(DISENO.lineaSeccion);
         // título centrado con líneas a los lados
         const titulo = sec.toUpperCase();
         const tw = f.bold.widthOfTextAtSize(limpio(f.bold, titulo), 10.5);
         const yc = yy + 12;
-        l(M, yc - 3.5, P.w / 2 - tw / 2 - 10, yc - 3.5, col, 1.4);
-        l(P.w / 2 + tw / 2 + 10, yc - 3.5, R, yc - 3.5, col, 1.4);
+        l(M, yc - 3.5, P.w / 2 - tw / 2 - 10, yc - 3.5, colLinea, 1.4);
+        l(P.w / 2 + tw / 2 + 10, yc - 3.5, R, yc - 3.5, colLinea, 1.4);
         t(titulo, P.w / 2, yc, { font: f.bold, size: 10.5, color: C.navy, align: 'center' });
         yy += S.header;
         if (!filas.length) {
@@ -257,16 +255,16 @@ const Ficha = (() => {
       }
     }
 
-    // ---------- pie de página
-    const yp = 754;
+    // ---------- pie de página (el crédito va hasta el final)
+    const yp = 734;
     l(M, yp, R, yp, C.line, 0.75);
-    t(DISENO.credito, P.w / 2, yp + 14, { font: f.bold, size: 8.5, color: C.navy, align: 'center' });
-    t(`Fuente: ${DISENO.fuente} · ${comp.label}${comp.jornadas ? ' · ' + jornadasTxt(comp) : ''}`, M, yp + 14,
-      { size: 7, color: C.faint, maxW: 170 });
-    t(`Datos al ${meta.generado.split(' ')[0]}`, R, yp + 14, { size: 7, color: C.faint, align: 'right' });
+    t(`Fuente: ${DISENO.fuente} · ${comp.label}${comp.jornadas ? ' · ' + jornadasTxt(comp) : ''}`, M, yp + 12,
+      { size: 7, color: C.faint, maxW: 250 });
+    t(`Datos al ${meta.generado.split(' ')[0]}`, R, yp + 12, { size: 7, color: C.faint, align: 'right' });
     const modoTxt = meta.modo === 'per90' ? 'valores por 90 minutos' : 'valores totales';
-    t(`Barra: valor del jugador respecto al máximo de la competencia (${modoTxt}).`, P.w / 2, yp + 25,
+    t(`Barra: valor del jugador respecto al máximo de toda la liga (${modoTxt}).`, P.w / 2, yp + 24,
       { size: 6.5, color: C.faint, align: 'center', font: f.ital });
+    t(DISENO.credito, P.w / 2, yp + 38, { font: f.bold, size: 8.5, color: C.navy, align: 'center' });
   }
 
   async function generar(jugadores, comp, meta) {

@@ -1,11 +1,14 @@
-# Fichas de Jugadores FB — Inteligencia Deportiva Pumas
+# Fichas de Jugadores — Inteligencia Deportiva Pumas
 
-Página (GitHub Pages) donde cualquiera del departamento elige un jugador y descarga su
-ficha en **PDF tamaño carta**. Nadie necesita instalar nada: solo abrir el link.
+Página (GitHub Pages) donde cualquiera del departamento elige un jugador **de Pumas** (U19, U21…)
+y descarga su ficha en **PDF tamaño carta**. Nadie necesita instalar nada: solo abrir el link.
+
+- Solo se generan fichas de jugadores de Pumas (`FILTRO_EQUIPO_FICHAS` en `config.py`).
+- Las barras se comparan contra el máximo de **toda la liga** (todos los equipos del Excel).
 
 ```
 fichas_pumas/
-├── config.py          <- RUTAS de tu compu + CATÁLOGO de atributos por posición
+├── config.py          <- RUTAS, filtro Pumas, NUI y CATÁLOGO de atributos por posición
 ├── build.py           <- lee Excel + fotos + mapas y genera docs/
 ├── actualizar.bat     <- (Windows) build + publicar en GitHub, doble clic
 ├── actualizar.sh      <- (Mac/Linux) lo mismo
@@ -34,6 +37,7 @@ ficha (fotos reducidas y las stats del catálogo).
    CARPETA_EXCEL = r"C:\Users\...\Matrices GolStats"
    CARPETA_FOTOS = r"C:\Users\...\Fotos Jugadores"
    CARPETA_MAPAS = r"C:\Users\...\Mapas de Calor"
+   CARPETA_NUI   = r"C:\Users\...\NUI"
    ```
 4. Crea el repositorio en GitHub (github.com → **New repository**, p. ej. `Pumas_FichasJugadores`,
    público, **sin** README).
@@ -60,7 +64,7 @@ Solo quien tenga permiso en el repo puede cambiar la data. Los demás solo ven.
 Cada `.xlsx` de la carpeta es una **Competencia** en la página (U19, U21, …). Si reemplazas el
 archivo J1-J7 por J1-J9, borra el viejo para que no salgan los dos.
 
-Al terminar, `faltantes_fotos.txt` y `faltantes_mapas.txt` listan quién no tiene imagen.
+Al terminar, `faltantes_fotos.txt`, `faltantes_mapas.txt` y `faltantes_nui.txt` listan a quién le falta algo.
 
 ## 3. Nombres de fotos y mapas de calor
 
@@ -80,6 +84,21 @@ Diego Sánchez__Atlante FC Under 19.jpg
 
 Formatos: jpg, jpeg, png, webp. Se buscan también en subcarpetas.
 Las fotos se recortan a 4:5 (centradas, cargadas hacia arriba). Los mapas no se recortan.
+
+## 3b. NUI
+
+Pon el/los Excel con los NUI en `CARPETA_NUI` (todas las hojas se leen). El programa busca solo:
+
+- la fila de encabezado que tenga una columna llamada **NUI**,
+- la columna del nombre: **JUGADOR**, **NOMBRE** o **NOMBRE COMPLETO**.
+
+El nombre se empata con la columna JUGADOR de GolStats; si en el registro viene con segundo
+apellido ("Humberto Mancilla Pérez") también lo encuentra. Si tu Excel trae el nombre en varias
+columnas, en `config.py`:
+
+```python
+NUI_COLS_NOMBRE = ["Nombre", "Apellido paterno", "Apellido materno"]
+```
 
 ## 4. Cambiar atributos (catálogo)
 
@@ -117,5 +136,5 @@ Doble clic a `ver_local.bat` → se abre `http://localhost:8000`.
 - La página es pública para quien tenga el link (no aparece en Google: `noindex`).
   Si se necesita privada, GitHub Pages en repo privado requiere plan GitHub Pro/Team.
 - Enlace directo a una ficha: al elegir un jugador la URL cambia (`?c=...&j=...`); ese link se puede mandar.
-- **PDF de todo el equipo**: elige un equipo en el filtro → un solo PDF con una hoja por jugador
-  (respeta también los filtros de posición y búsqueda).
+- **PDF de toda la plantilla**: un solo PDF con una hoja por jugador de la lista
+  (respeta los filtros de posición y búsqueda). La búsqueda acepta nombre o NUI.

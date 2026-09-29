@@ -2,7 +2,7 @@
 (() => {
   const D = window.FICHAS;
   const $ = (id) => document.getElementById(id);
-  const selComp = $('selComp'), selEquipo = $('selEquipo'), selPos = $('selPos'), txt = $('txtBuscar');
+  const selComp = $('selComp'), selPos = $('selPos'), txt = $('txtBuscar');
   const lista = $('lista'), count = $('count'), status = $('status');
   const btnPdf = $('btnPdf'), btnEquipo = $('btnEquipo'), frame = $('preview'), empty = $('empty');
 
@@ -23,15 +23,11 @@
 
   function cargarComp() {
     comp = D.competencias.find((c) => c.id === selComp.value) || D.competencias[0];
-    const eqs = [...new Set(comp.jugadores.map((j) => j.equipoCorto))].sort((a, b) => a.localeCompare(b, 'es'));
     const pos = [...new Set(comp.jugadores.map((j) => j.posicion))].sort((a, b) => a.localeCompare(b, 'es'));
-    const eqPrev = selEquipo.value, posPrev = selPos.value;
-    selEquipo.innerHTML = ''; selPos.innerHTML = '';
-    selEquipo.appendChild(opt('', 'Todos'));
-    eqs.forEach((e) => selEquipo.appendChild(opt(e, e)));
+    const posPrev = selPos.value;
+    selPos.innerHTML = '';
     selPos.appendChild(opt('', 'Todas'));
     pos.forEach((p) => selPos.appendChild(opt(p, p)));
-    if (eqs.includes(eqPrev)) selEquipo.value = eqPrev;
     if (pos.includes(posPrev)) selPos.value = posPrev;
     pintarLista();
   }
@@ -39,9 +35,8 @@
   function filtrados() {
     const q = norm(txt.value.trim());
     return comp.jugadores.filter((j) =>
-      (!selEquipo.value || j.equipoCorto === selEquipo.value) &&
       (!selPos.value || j.posicion === selPos.value) &&
-      (!q || norm(j.nombre).includes(q) || norm(j.equipoCorto).includes(q)));
+      (!q || norm(j.nombre).includes(q) || String(j.nui || '').includes(q)));
   }
 
   function pintarLista() {
@@ -55,14 +50,14 @@
       li.innerHTML = `<span class="n"></span><span class="m"></span><span class="e"></span>`;
       li.querySelector('.n').textContent = j.nombre;
       li.querySelector('.m').textContent = `${j.minutos.toLocaleString('es-MX')} min`;
-      li.querySelector('.e').textContent = `${j.equipoCorto} · ${j.posicion}`;
+      li.querySelector('.e').textContent = `${j.posicion}${j.nui ? ' · NUI ' + j.nui : ''}`;
       li.addEventListener('click', () => seleccionar(j));
       frag.appendChild(li);
     });
     lista.appendChild(frag);
     count.textContent = `${js.length} jugador${js.length === 1 ? '' : 'es'}`;
-    btnEquipo.disabled = !selEquipo.value || !js.length;
-    btnEquipo.title = selEquipo.value ? `Todas las fichas de ${selEquipo.value} (según filtros)` : 'Elige un equipo en el filtro';
+    btnEquipo.disabled = !js.length;
+    btnEquipo.title = `Un PDF con las ${js.length} fichas de la lista (respeta filtros)`;
   }
 
   async function seleccionar(j) {
@@ -114,14 +109,13 @@
     status.textContent = `Generando ${js.length} fichas…`;
     try {
       const bytes = await Ficha.generar(js, comp, D);
-      descargar(bytes, `Fichas_${nombreArchivo(selEquipo.value)}_${nombreArchivo(comp.label)}.pdf`);
+      descargar(bytes, `Fichas_Pumas_${nombreArchivo(comp.label)}${selPos.value ? '_' + nombreArchivo(selPos.value) : ''}.pdf`);
       status.textContent = `Listo: ${js.length} fichas.`;
     } catch (e) { status.textContent = 'Error: ' + e.message; }
     ocupado = false; btnEquipo.disabled = false;
   });
 
   selComp.addEventListener('change', () => { actual = null; cargarComp(); });
-  selEquipo.addEventListener('change', pintarLista);
   selPos.addEventListener('change', pintarLista);
   txt.addEventListener('input', pintarLista);
 

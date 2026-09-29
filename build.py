@@ -74,7 +74,11 @@ def num(v, dec=None):
 
 def equipo_corto(eq):
     e = re.sub(r"\s+Under\s+U?(\d+)$", r" U\1", str(eq).strip())
-    return re.sub(r"\s+", " ", e)
+    e = re.sub(r"\s+", " ", e)
+    if C.NOMBRE_EQUIPO_FICHA and slug(C.FILTRO_EQUIPO_FICHAS) in slug(e):
+        cat = re.search(r"\bU\s?(\d+)\b", e)
+        return f"{C.NOMBRE_EQUIPO_FICHA} U{cat.group(1)}" if cat else C.NOMBRE_EQUIPO_FICHA
+    return e
 
 
 def etiqueta_competencia(stem, titulo_hoja):
@@ -141,6 +145,70 @@ def procesar_mapa(src, dst):
     fondo.save(dst, "JPEG", quality=88, optimize=True)
 
 
+# ----------------------------------------------------------------------------- NUI
+def _es_vacio(v):
+    return v is None or (isinstance(v, float) and math.isnan(v)) or str(v).strip() in {"", "nan", "NaT"}
+
+
+def _texto_nui(v):
+    if _es_vacio(v):
+        return None
+    if isinstance(v, (float, np.floating)) and float(v).is_integer():
+        v = int(v)
+    return str(v).strip()
+
+
+def cargar_nui():
+    """Lee todos los Excel de CARPETA_NUI -> lista de (tokens_nombre, nombre_slug, nui)."""
+    registros = []
+    carpeta = ruta(C.CARPETA_NUI)
+    if not os.path.isdir(carpeta):
+        print(f"  [aviso] no existe la carpeta de NUI {carpeta}")
+        return registros
+    for f in sorted(os.listdir(carpeta)):
+        if not f.lower().endswith((".xlsx", ".xlsm", ".xls", ".csv")) or f.startswith("~$"):
+            continue
+        path = os.path.join(carpeta, f)
+        hojas = {"csv": pd.read_csv(path, header=None, dtype=object)} if f.lower().endswith(".csv") \
+            else pd.read_excel(path, sheet_name=None, header=None, dtype=object)
+        for hoja, crudo in hojas.items():
+            # fila de encabezado = la primera (de las 15 primeras) que tenga una celda con "NUI"
+            fila = next((i for i in range(min(15, len(crudo)))
+                         if any("nui" in slug(c).split("_") for c in crudo.iloc[i] if not _es_vacio(c))), None)
+            if fila is None:
+                continue
+            df = crudo.iloc[fila + 1:].copy()
+            df.columns = [str(c).strip() for c in crudo.iloc[fila]]
+            col_nui = C.NUI_COL_NUI or next(c for c in df.columns if "nui" in slug(c).split("_"))
+            if C.NUI_COLS_NOMBRE:
+                cols_nom = C.NUI_COLS_NOMBRE
+            else:
+                cand = [c for c in df.columns if slug(c) in {"jugador", "nombre", "nombre_completo", "nombre_del_jugador"}]
+                if not cand:
+                    print(f"  [aviso] {f} / {hoja}: no encontré columna de nombre; usa NUI_COLS_NOMBRE en config.py")
+                    continue
+                cols_nom = [cand[0]]
+            for _, r in df.iterrows():
+                nui = _texto_nui(r.get(col_nui))
+                nombre = " ".join(str(r[c]).strip() for c in cols_nom if not _es_vacio(r.get(c)))
+                if nui and nombre:
+                    registros.append((set(slug(nombre).split("_")), slug(nombre), nui))
+        print(f"  NUI: {f} leído")
+    print(f"NUI cargados: {len(registros)}")
+    return registros
+
+
+def buscar_nui(registros, nombre):
+    s = slug(nombre)
+    exactos = [r for r in registros if r[1] == s]
+    if len(exactos) == 1:
+        return exactos[0][2]
+    # "Humberto Mancilla" (GolStats) dentro de "Humberto Mancilla Pérez" (registro)
+    tokens = set(s.split("_"))
+    parciales = {r[2] for r in registros if tokens <= r[0]}
+    return parciales.pop() if len(parciales) == 1 else None
+
+
 # ----------------------------------------------------------------------------- catálogo
 def validar_catalogo():
     errores = []
@@ -166,7 +234,7 @@ def grupo_de(metrica, posicion):
 
 
 # ----------------------------------------------------------------------------- una competencia
-def procesar_excel(path, idx_fotos, idx_mapas, usados, faltantes):
+def procesar_excel(path, idx_fotos, idx_mapas, nuis, usados, faltantes):
     stem = os.path.splitext(os.path.basename(path))[0]
     titulo = pd.read_excel(path, sheet_name=C.HOJA_EXCEL, header=None, nrows=1).iloc[0, 0]
     df = pd.read_excel(path, sheet_name=C.HOJA_EXCEL, header=C.FILA_ENCABEZADO)
@@ -175,7 +243,11 @@ def procesar_excel(path, idx_fotos, idx_mapas, usados, faltantes):
 
     jr = jornadas(stem, titulo)
     label = etiqueta_competencia(stem, titulo)
-    print(f"\n== {label}  ({os.path.basename(path)}) — {len(df)} jugadores")
+    es_ficha = df[C.COL_EQUIPO].astype(str).map(slug).str.contains(slug(C.FILTRO_EQUIPO_FICHAS), regex=False)
+    print(f"\n== {label}  ({os.path.basename(path)}) — {len(df)} jugadores en la liga, "
+          f"{int(es_ficha.sum())} con ficha")
+    if not es_ficha.any():
+        print(f"  [aviso] ningún EQUIPO contiene '{C.FILTRO_EQUIPO_FICHAS}' (FILTRO_EQUIPO_FICHAS en config.py)")
 
     cols_faltan = sorted({col for col, _ in C.METRICAS.values() if col not in df.columns})
     if cols_faltan:
@@ -215,7 +287,7 @@ def procesar_excel(path, idx_fotos, idx_mapas, usados, faltantes):
         return max_cache[key]
 
     jugadores = []
-    for i in df.index:
+    for i in df.index[es_ficha.values]:
         nombre = str(df.at[i, C.COL_JUGADOR]).strip()
         equipo = str(df.at[i, C.COL_EQUIPO]).strip()
         pid = slug(f"{nombre}_{equipo}")
@@ -236,6 +308,10 @@ def procesar_excel(path, idx_fotos, idx_mapas, usados, faltantes):
             usados.add(mapa)
         else:
             faltantes["mapas"].add(f"{nombre}  ({equipo})")
+
+        nui = buscar_nui(nuis, nombre)
+        if not nui:
+            faltantes["nui"].add(f"{nombre}  ({equipo})")
 
         secciones = {}
         for sec in C.SECCIONES:
@@ -260,6 +336,7 @@ def procesar_excel(path, idx_fotos, idx_mapas, usados, faltantes):
             "nombre": nombre,
             "equipo": equipo,
             "equipoCorto": equipo_corto(equipo),
+            "nui": nui,
             "posicion": posicion,
             "posicionExcel": pos_orig[i],
             "edad": None if math.isnan(edad) else int(edad),
@@ -301,8 +378,10 @@ def main():
     idx_mapas = indexar_imagenes(C.CARPETA_MAPAS)
     print(f"Fotos encontradas: {len(idx_fotos)}   Mapas encontrados: {len(idx_mapas)}")
 
-    usados, faltantes = set(), {"fotos": set(), "mapas": set()}
-    competencias = [procesar_excel(p, idx_fotos, idx_mapas, usados, faltantes) for p in excels]
+    nuis = cargar_nui()
+
+    usados, faltantes = set(), {"fotos": set(), "mapas": set(), "nui": set()}
+    competencias = [procesar_excel(p, idx_fotos, idx_mapas, nuis, usados, faltantes) for p in excels]
 
     # borrar imágenes que ya no se usan
     for sub in ("fotos", "mapas"):
@@ -325,9 +404,9 @@ def main():
     n = sum(len(c["jugadores"]) for c in competencias)
     print(f"\nListo -> {os.path.relpath(OUT_DATA, BASE)}  ({n} fichas, "
           f"{os.path.getsize(OUT_DATA)/1024:.0f} KB)")
-    for tipo in ("fotos", "mapas"):
+    for tipo in ("fotos", "mapas", "nui"):
         if faltantes[tipo]:
-            print(f"  Sin {tipo[:-1]}: {len(faltantes[tipo])} jugadores "
+            print(f"  Sin {tipo if tipo == 'nui' else tipo[:-1]}: {len(faltantes[tipo])} jugadores "
                   f"(lista en faltantes_{tipo}.txt)")
         with open(os.path.join(BASE, f"faltantes_{tipo}.txt"), "w", encoding="utf-8") as f:
             f.write("\n".join(sorted(faltantes[tipo])))
