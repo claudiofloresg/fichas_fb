@@ -29,13 +29,13 @@
     selPos.appendChild(opt('', 'Todas'));
     pos.forEach((p) => selPos.appendChild(opt(p, p)));
     if (pos.includes(posPrev)) selPos.value = posPrev;
-    // filtro de registro: propios de la categoría / de categorías inferiores con minutos aquí
+    // filtro de registro: propios de la categoría / de otras categorías con minutos aquí
     const regPrev = selReg.value;
     const hayInferiores = comp.jugadores.some((j) => j.subido);
     selReg.innerHTML = '';
     selReg.appendChild(opt('', 'Todos'));
     selReg.appendChild(opt('reg', `Registrados en U${comp.categoria}`));
-    if (hayInferiores) selReg.appendChild(opt('sub', 'De categoría inferior con minutos aquí'));
+    if (hayInferiores) selReg.appendChild(opt('sub', 'De otra categoría con minutos aquí'));
     selReg.parentElement.style.display = hayInferiores ? '' : 'none';
     if ([...selReg.options].some((o) => o.value === regPrev)) selReg.value = regPrev;
     pintarLista();
@@ -59,7 +59,7 @@
         grupo = true;
         const h = document.createElement('li');
         h.className = 'grupo';
-        h.textContent = `Registrados en categoría inferior con minutos en U${comp.categoria}`;
+        h.textContent = `Registrados en otra categoría con minutos en U${comp.categoria}`;
         frag.appendChild(h);
       }
       const li = document.createElement('li');

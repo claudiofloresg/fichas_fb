@@ -11,8 +11,8 @@ Flujo
      y se buscan ahí los registrados de esa categoría: su nombre completo se empata
      con el nombre corto de la Matrix ("José Humberto Mancilla López" <-> "Humberto Mancilla").
   3. Registrados sin minutos (no están en la Matrix) salen igual, en ceros.
-  4. Registrados en categoría inferior que tienen minutos en una superior
-     (U19 jugando en U21) salen también en la lista de la superior.
+  4. Registrados en OTRA categoría que tienen minutos en esta Matrix (U19 que sube
+     a U21 o U21 que baja a U19) salen también en esta lista, con estas stats.
   5. Los máximos de las barras se calculan con TODA la liga de esa Matrix.
 
 Genera
@@ -466,7 +466,7 @@ def main():
     rep = {k: [] for k in ("sin_foto", "sin_mapa", "sin_minutos", "sin_registro", "dudosos", "subidos", "sin_nui")}
     usados_img = set()
     competencias = []
-    tambien_en = {}          # rid -> [labels de categorías superiores donde tiene minutos]
+    tambien_en = {}          # rid -> [labels de otras categorías donde tiene minutos]
 
     # 1) empatar registro <-> cada Matrix (primero todas, para juntar los alias de cada jugador)
     matrices = []
@@ -481,8 +481,8 @@ def main():
         for c in mx["faltan"]:
             print(f"  [aviso] columna que no viene en este Excel: {c}")
         mx["propios"] = [r for r in registro if r["cat"] == cat]
-        mx["inferiores"] = [r for r in registro if r["cat"] and r["cat"] < cat] \
-            if cfg("INCLUIR_CATEGORIA_INFERIOR", True) else []
+        mx["inferiores"] = [r for r in registro if r["cat"] and r["cat"] != cat] \
+            if cfg("INCLUIR_OTRAS_CATEGORIAS", cfg("INCLUIR_CATEGORIA_INFERIOR", True)) else []
         mx["asignado"] = empatar(mx, mx["propios"] + mx["inferiores"], rep)
         for rid, i in mx["asignado"].items():
             alias.setdefault(rid, []).append(str(mx["df"].at[i, C.COL_JUGADOR]).strip())
@@ -570,7 +570,7 @@ def main():
         jugadores.sort(key=lambda j: (j["subido"], slug(j["nombre"])))
         print(f"\n  {mx['label']} — fichas: {sum(not j['subido'] for j in jugadores)} registrados U{cat}"
               f" ({sum(not j['conDatos'] for j in jugadores)} sin minutos)"
-              + (f" + {sum(j['subido'] for j in jugadores)} de categoría inferior" if inferiores else ""))
+              + (f" + {sum(j['subido'] for j in jugadores)} de otra categoría" if inferiores else ""))
         competencias.append({
             "id": slug(mx["stem"]),
             "label": mx["label"],
@@ -616,7 +616,7 @@ def main():
     titulos = {
         "sin_registro": "Pumas en la Matrix que NO están en el registro (primer equipo, otra categoría o nombre que no empató)",
         "dudosos": "Empates dudosos (no se asignaron)",
-        "subidos": "Registrados en categoría inferior con minutos en superior",
+        "subidos": "Registrados en otra categoría con minutos en esta liga (suben o bajan)",
         "sin_minutos": "Registrados sin minutos en la Matrix (ficha en ceros)",
         "sin_nui": "Registrados sin NUI",
         "sin_foto": "Sin foto",

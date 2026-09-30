@@ -82,8 +82,9 @@ Opcionales: **POSICIÓN** y **FECHA DE NACIMIENTO** (sirven para los que aún no
 - El programa busca a cada registrado en la Matrix de su liga aunque ahí venga cortado
   ("José Humberto Mancilla López" ↔ "Humberto Mancilla" o "Jose Mancilla"). Ignora mayúsculas y acentos.
 - Registrados **sin minutos** salen igual: barras en 0 si tienen POSICIÓN; si no, un aviso.
-- Registrados en **U19 con minutos en U21**: salen en su lista de U19 (con la etiqueta "También en U21")
-  y también en la lista de U21, en un grupo aparte, con sus stats de la Matrix U21.
+- Registrados con minutos en **otra categoría** (U19 que sube a U21 o U21 que baja a U19): salen en la
+  lista de su categoría (con la etiqueta "También en …") y también en la lista de la otra, en un grupo
+  aparte, con sus stats de esa Matrix.
 - Si alguien no empata o empata mal: `EMPATES_MANUALES` en `config.py` (NUI → nombre como viene en la Matrix).
 
 Después de cada `actualizar.bat` revisa **`reporte_build.txt`**: Pumas de la Matrix que no están en el
