@@ -159,7 +159,7 @@ const Ficha = (() => {
     t(jug.nombre.toUpperCase(), xT, 64, { font: f.bold, size: 24, color: C.navy, maxW: R - xT, minSize: 13 });
     // equipo de registro; si juega en una categoría superior o también tiene minutos en otra, se indica
     let lineaEquipo = jug.equipo || '';
-    if (jug.subido) lineaEquipo += `   ·   Registrado en U${jug.categoria}, stats de ${comp.label}`;
+    //if (jug.subido) lineaEquipo += `   ·   Registrado en U${jug.categoria}, stats de ${comp.label}`;
     //else if (jug.tambienEn && jug.tambienEn.length) lineaEquipo += `   ·   También con minutos en ${jug.tambienEn.join(', ')}`;
     t(lineaEquipo, xT, 81, { size: 10, color: C.soft, maxW: R - xT, minSize: 7 });
     l(M, 96, R, 96, C.navy, 2);
