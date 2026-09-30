@@ -7,3 +7,4 @@ faltantes_*.txt
 __pycache__/
 *.pyc
 .env
+reporte_build.txt

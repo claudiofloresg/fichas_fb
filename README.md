@@ -64,41 +64,42 @@ Solo quien tenga permiso en el repo puede cambiar la data. Los demás solo ven.
 Cada `.xlsx` de la carpeta es una **Competencia** en la página (U19, U21, …). Si reemplazas el
 archivo J1-J7 por J1-J9, borra el viejo para que no salgan los dos.
 
-Al terminar, `faltantes_fotos.txt`, `faltantes_mapas.txt` y `faltantes_nui.txt` listan a quién le falta algo.
+Al terminar, `reporte_build.txt` lista a quién le falta algo.
 
-## 3. Nombres de fotos y mapas de calor
+## 3. Registro (quién tiene ficha)
 
-El nombre del archivo = columna **JUGADOR** del Excel (se ignoran mayúsculas, acentos y espacios):
+El Excel en `CARPETA_NUI` manda. Formato (una fila por jugador):
 
-```
-Humberto Mancilla.jpg
-Jaime Obregón.png
-```
+| NOMBRE | NUI | EQUIPO |
+|---|---|---|
+| José Humberto Mancilla López | 000000 | Pumas UNAM U21 |
 
-Si hay dos jugadores con el mismo nombre en equipos distintos, agrega el equipo tal cual viene en el Excel
-después de dos guiones bajos:
+Opcionales: **POSICIÓN** y **FECHA DE NACIMIENTO** (sirven para los que aún no tienen minutos).
 
-```
-Diego Sánchez__Atlante FC Under 19.jpg
-```
+- En la página, cada competencia (U19, U21) muestra **solo los registrados en esa categoría**.
+  Los de primer equipo o no registrados ya no salen.
+- El nombre que se imprime es el del registro (escríbelo normal, con acentos).
+- El programa busca a cada registrado en la Matrix de su liga aunque ahí venga cortado
+  ("José Humberto Mancilla López" ↔ "Humberto Mancilla" o "Jose Mancilla"). Ignora mayúsculas y acentos.
+- Registrados **sin minutos** salen igual: barras en 0 si tienen POSICIÓN; si no, un aviso.
+- Registrados en **U19 con minutos en U21**: salen en su lista de U19 (con la etiqueta "También en U21")
+  y también en la lista de U21, en un grupo aparte, con sus stats de la Matrix U21.
+- Si alguien no empata o empata mal: `EMPATES_MANUALES` en `config.py` (NUI → nombre como viene en la Matrix).
 
-Formatos: jpg, jpeg, png, webp. Se buscan también en subcarpetas.
-Las fotos se recortan a 4:5 (centradas, cargadas hacia arriba). Los mapas no se recortan.
+Después de cada `actualizar.bat` revisa **`reporte_build.txt`**: Pumas de la Matrix que no están en el
+registro, empates dudosos, sin minutos, sin foto, sin mapa.
 
-## 3b. NUI
+## 3b. Fotos y mapas de calor
 
-Pon el/los Excel con los NUI en `CARPETA_NUI` (todas las hojas se leen). El programa busca solo:
+Se buscan en este orden (se ignoran mayúsculas, acentos y espacios; también en subcarpetas):
 
-- la fila de encabezado que tenga una columna llamada **NUI**,
-- la columna del nombre: **JUGADOR**, **NOMBRE** o **NOMBRE COMPLETO**.
+1. `NUI.png` → `151446.png` (lo más seguro)
+2. nombre completo del registro → `José Humberto Mancilla López.png`
+3. nombre de la Matrix → `Humberto Mancilla.png`
 
-El nombre se empata con la columna JUGADOR de GolStats; si en el registro viene con segundo
-apellido ("Humberto Mancilla Pérez") también lo encuentra. Si tu Excel trae el nombre en varias
-columnas, en `config.py`:
-
-```python
-NUI_COLS_NOMBRE = ["Nombre", "Apellido paterno", "Apellido materno"]
-```
+Las fotos se igualan solas: se detecta al jugador (fondo blanco o transparente), se recorta y se escala
+para que todos ocupen el mismo alto. Si los quieres más grandes o más chicos: `FOTO_ALTO_JUGADOR`
+en `config.py` (0.86 por defecto).
 
 ## 4. Cambiar atributos (catálogo)
 

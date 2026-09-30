@@ -2,7 +2,7 @@
 (() => {
   const D = window.FICHAS;
   const $ = (id) => document.getElementById(id);
-  const selComp = $('selComp'), selPos = $('selPos'), txt = $('txtBuscar');
+  const selComp = $('selComp'), selPos = $('selPos'), selReg = $('selReg'), txt = $('txtBuscar');
   const lista = $('lista'), count = $('count'), status = $('status');
   const btnPdf = $('btnPdf'), btnEquipo = $('btnEquipo'), frame = $('preview'), empty = $('empty');
 
@@ -23,19 +23,29 @@
 
   function cargarComp() {
     comp = D.competencias.find((c) => c.id === selComp.value) || D.competencias[0];
-    const pos = [...new Set(comp.jugadores.map((j) => j.posicion))].sort((a, b) => a.localeCompare(b, 'es'));
+    const pos = [...new Set(comp.jugadores.map((j) => j.posicion || 'Sin posición'))].sort((a, b) => a.localeCompare(b, 'es'));
     const posPrev = selPos.value;
     selPos.innerHTML = '';
     selPos.appendChild(opt('', 'Todas'));
     pos.forEach((p) => selPos.appendChild(opt(p, p)));
     if (pos.includes(posPrev)) selPos.value = posPrev;
+    // filtro de registro: propios de la categoría / de categorías inferiores con minutos aquí
+    const regPrev = selReg.value;
+    const hayInferiores = comp.jugadores.some((j) => j.subido);
+    selReg.innerHTML = '';
+    selReg.appendChild(opt('', 'Todos'));
+    selReg.appendChild(opt('reg', `Registrados en U${comp.categoria}`));
+    if (hayInferiores) selReg.appendChild(opt('sub', 'De categoría inferior con minutos aquí'));
+    selReg.parentElement.style.display = hayInferiores ? '' : 'none';
+    if ([...selReg.options].some((o) => o.value === regPrev)) selReg.value = regPrev;
     pintarLista();
   }
 
   function filtrados() {
     const q = norm(txt.value.trim());
     return comp.jugadores.filter((j) =>
-      (!selPos.value || j.posicion === selPos.value) &&
+      (!selPos.value || (j.posicion || 'Sin posición') === selPos.value) &&
+      (!selReg.value || (selReg.value === 'sub') === !!j.subido) &&
       (!q || norm(j.nombre).includes(q) || String(j.nui || '').includes(q)));
   }
 
@@ -43,19 +53,36 @@
     const js = filtrados();
     lista.innerHTML = '';
     const frag = document.createDocumentFragment();
+    let grupo = false;
     js.forEach((j) => {
+      if (j.subido && !grupo) {
+        grupo = true;
+        const h = document.createElement('li');
+        h.className = 'grupo';
+        h.textContent = `Registrados en categoría inferior con minutos en U${comp.categoria}`;
+        frag.appendChild(h);
+      }
       const li = document.createElement('li');
       li.dataset.id = j.id;
       if (actual && actual.id === j.id) li.classList.add('sel');
       li.innerHTML = `<span class="n"></span><span class="m"></span><span class="e"></span>`;
       li.querySelector('.n').textContent = j.nombre;
       li.querySelector('.m').textContent = `${j.minutos.toLocaleString('es-MX')} min`;
-      li.querySelector('.e').textContent = `${j.posicion}${j.nui ? ' · NUI ' + j.nui : ''}`;
+      li.querySelector('.e').textContent = `${j.posicion || 'Sin posición'}${j.nui ? ' · NUI ' + j.nui : ''}`;
+      const tags = [];
+      if (j.subido) tags.push(['U' + j.categoria, 'sube']);
+      if (!j.conDatos) tags.push(['Sin minutos', 'cero']);
+      (j.tambienEn || []).forEach((t) => tags.push(['También en ' + t.replace(/^Liga MX\s*/i, ''), 'tb']));
+      tags.forEach(([t, c]) => {
+        const b = document.createElement('span'); b.className = 'tag ' + c; b.textContent = t;
+        li.querySelector('.e').appendChild(b);
+      });
       li.addEventListener('click', () => seleccionar(j));
       frag.appendChild(li);
     });
     lista.appendChild(frag);
     count.textContent = `${js.length} jugador${js.length === 1 ? '' : 'es'}`;
+    if (!js.length) { const v = document.createElement('li'); v.className = 'grupo'; v.textContent = 'Sin resultados'; lista.appendChild(v); }
     btnEquipo.disabled = !js.length;
     btnEquipo.title = `Un PDF con las ${js.length} fichas de la lista (respeta filtros)`;
   }
@@ -64,7 +91,8 @@
     actual = j;
     document.querySelectorAll('#lista li').forEach((li) => li.classList.toggle('sel', li.dataset.id === j.id));
     $('titulo').textContent = j.nombre;
-    $('subtitulo').textContent = `${j.equipoCorto} · ${j.posicion} · ${j.minutos.toLocaleString('es-MX')} min`;
+    $('subtitulo').textContent = [j.equipo, j.posicion, `${j.minutos.toLocaleString('es-MX')} min en ${comp.label}`]
+      .filter(Boolean).join(' · ');
     btnPdf.disabled = false;
     const u = new URL(location.href);
     u.searchParams.set('c', comp.id); u.searchParams.set('j', j.id);
@@ -117,6 +145,7 @@
 
   selComp.addEventListener('change', () => { actual = null; cargarComp(); });
   selPos.addEventListener('change', pintarLista);
+  selReg.addEventListener('change', pintarLista);
   txt.addEventListener('input', pintarLista);
 
   // enlace directo: ?c=<competencia>&j=<jugador>

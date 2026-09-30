@@ -36,6 +36,12 @@
   li .n{font-weight:700;font-size:14px;}
   li .m{font-size:11px;color:var(--ink-soft);font-variant-numeric:tabular-nums;text-align:right;}
   li .e{font-size:11px;color:var(--ink-faint);grid-column:1 / -1;}
+  li .tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:9px;font-size:10px;font-weight:700;letter-spacing:.02em;}
+  li .tag.sube{background:var(--navy);color:#fff;}
+  li .tag.cero{background:#EEF0EC;color:var(--ink-soft);border:1px solid var(--line);}
+  li .tag.tb{background:var(--gold-soft);color:#7A5E17;}
+  ul#lista li.grupo{display:block;cursor:default;background:var(--paper);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);padding:8px 16px;}
+  ul#lista li.grupo:hover{background:var(--paper);}
   section.visor{display:flex;flex-direction:column;min-height:0;padding:16px 20px;gap:12px;}
   .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .toolbar h2{font-size:20px;margin:0;color:var(--navy);text-transform:uppercase;}
@@ -75,6 +81,7 @@
         <select id="selComp"></select>
       </div>
       <div><label for="selPos">Posición</label><select id="selPos"></select></div>
+      <div><label for="selReg">Registro</label><select id="selReg"></select></div>
       <div>
         <label for="txtBuscar">Buscar jugador</label>
         <input type="search" id="txtBuscar" placeholder="Nombre o NUI…" autocomplete="off">
@@ -103,8 +110,8 @@
 </main>
 
 <script src="vendor/pdf-lib.min.js"></script>
-<script src="data/fichas.js"></script>
-<script src="ficha.js"></script>
-<script src="app.js"></script>
+<script src="data/fichas.js?v=20260930120937"></script>
+<script src="ficha.js?v=20260930120937"></script>
+<script src="app.js?v=20260930120937"></script>
 </body>
 </html>

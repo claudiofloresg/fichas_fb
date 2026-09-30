@@ -12,11 +12,11 @@ const DISENO = {
   // Colores de la ficha = colores del club: barras azul marino, líneas de sección oro
   barra: '#0C2A4E',
   lineaSeccion: '#B9902E',
-  foto: { x: 36, y: 112, w: 112, h: 140 },
-  datos: { x: 166, w: 110 },      // columna "Datos del jugador"
-  minutos: { x: 292, w: 104 },    // columna "Minutos de juego"
-  mapa: { x: 412, y: 112, w: 164, h: 140 },
-  secciones: { yIni: 272, yFin: 724, header: 24, gap: 6, filaMin: 14, filaMax: 22 },
+  foto: { x: 36, y: 112, w: 96, h: 120 },
+  datos: { x: 146, w: 116 },      // columna "Datos del jugador"
+  minutos: { x: 274, w: 106 },    // columna "Minutos de juego"
+  mapa: { x: 396, y: 112, w: 180, h: 124 },
+  secciones: { yIni: 254, yFin: 724, header: 24, gap: 6, filaMin: 14, filaMax: 22 },
   credito: 'Creado por Inteligencia Deportiva Pumas',
   fuente: 'GolStats',
 };
@@ -144,20 +144,25 @@ const Ficha = (() => {
     const { f } = ctx;
     const M = P.margen, R = P.w - M;
 
-    // ---------- encabezado (solo competencia + nombre; club/posición van en los datos)
+    // ---------- encabezado: competencia, nombre y equipo (logo centrado con el bloque de texto)
     r(0, 0, P.w, 6, C.navy);
     r(0, 6, P.w, 2, hex(DISENO.colores.gold));
     let xT = M;
     if (ctx.logo) {
       const h = 54, w = ctx.logo.width * (h / ctx.logo.height);
-      page.drawImage(ctx.logo, { x: M, y: P.h - 22 - h, width: w, height: h });
+      const yLogo = 58 - h / 2;   // 58 = centro vertical del bloque de texto (eyebrow 38 · nombre 64 · equipo 81)
+      page.drawImage(ctx.logo, { x: M, y: P.h - yLogo - h, width: w, height: h });
       xT = M + w + 14;
     }
     const eyebrow = ['FICHA DE JUGADOR', comp.label, jornadasTxt(comp)].filter(Boolean).join('   ·   ');
-       t(eyebrow.toUpperCase(), xT, 38, { font: f.bold, size: 8, color: C.gold, maxW: R - xT });
-       t(jug.nombre.toUpperCase(), xT, 64, { font: f.bold, size: 24, color: C.navy, maxW: R - xT, minSize: 14 });
-       t(jug.equipoCorto, xT, 81, { size: 10, color: C.soft, maxW: R - xT });
-       l(M, 96, R, 96, C.navy, 2);
+    t(eyebrow.toUpperCase(), xT, 38, { font: f.bold, size: 8, color: C.gold, maxW: R - xT });
+    t(jug.nombre.toUpperCase(), xT, 64, { font: f.bold, size: 24, color: C.navy, maxW: R - xT, minSize: 13 });
+    // equipo de registro; si juega en una categoría superior o también tiene minutos en otra, se indica
+    let lineaEquipo = jug.equipo || '';
+    if (jug.subido) lineaEquipo += `   ·   Registrado en U${jug.categoria}, stats de ${comp.label}`;
+    else if (jug.tambienEn && jug.tambienEn.length) lineaEquipo += `   ·   También con minutos en ${jug.tambienEn.join(', ')}`;
+    t(lineaEquipo, xT, 81, { size: 10, color: C.soft, maxW: R - xT, minSize: 7 });
+    l(M, 96, R, 96, C.navy, 2);
 
     // ---------- foto
     const F = DISENO.foto;
@@ -215,9 +220,11 @@ const Ficha = (() => {
     const nFilas = secs.reduce((a, [, fs]) => a + fs.length, 0);
     let yy = S.yIni;
     if (!nFilas) {
+      const aviso = !jug.conDatos
+        ? `Sin minutos registrados en ${comp.label}${comp.jornadas ? ' (' + jornadasTxt(comp) + ')' : ''}.`
+        : `Sin catálogo de atributos para la posición "${jug.posicion}".`;
       r(M, yy, R - M, 60, C.placeholder);
-      t(`Sin catálogo de atributos para la posición "${jug.posicion}".`, P.w / 2, yy + 34,
-        { size: 10, color: C.soft, align: 'center', font: f.ital });
+      t(aviso, P.w / 2, yy + 34, { size: 10, color: C.soft, align: 'center', font: f.ital });
     } else {
       const disp = S.yFin - S.yIni - secs.length * (S.header + S.gap);
       const fh = Math.max(S.filaMin, Math.min(S.filaMax, disp / nFilas));
