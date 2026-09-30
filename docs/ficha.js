@@ -17,7 +17,7 @@ const DISENO = {
   minutos: { x: 274, w: 106 },    // columna "Minutos de juego"
   mapa: { x: 396, y: 112, w: 180, h: 124 },
   secciones: { yIni: 254, yFin: 724, header: 24, gap: 6, filaMin: 14, filaMax: 22 },
-  credito: 'Creado por Inteligencia Deportiva Pumas',
+  credito: 'Elaborado por Inteligencia Deportiva Pumas',
   fuente: 'GolStats',
 };
 
@@ -160,7 +160,7 @@ const Ficha = (() => {
     // equipo de registro; si juega en una categoría superior o también tiene minutos en otra, se indica
     let lineaEquipo = jug.equipo || '';
     if (jug.subido) lineaEquipo += `   ·   Registrado en U${jug.categoria}, stats de ${comp.label}`;
-    else if (jug.tambienEn && jug.tambienEn.length) lineaEquipo += `   ·   También con minutos en ${jug.tambienEn.join(', ')}`;
+    //else if (jug.tambienEn && jug.tambienEn.length) lineaEquipo += `   ·   También con minutos en ${jug.tambienEn.join(', ')}`;
     t(lineaEquipo, xT, 81, { size: 10, color: C.soft, maxW: R - xT, minSize: 7 });
     l(M, 96, R, 96, C.navy, 2);
 
