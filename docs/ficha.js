@@ -198,7 +198,7 @@ const Ficha = (() => {
     bloque('MINUTOS DE JUEGO', DISENO.minutos, [
       ['Minutos jugados', jug.minutos.toLocaleString('es-MX')],
       ['Partidos jugados', String(jug.partidos)],
-      ['Minutos por partido', jug.partidos ? String(Math.round(jug.minutos / jug.partidos)) : null],
+      ['Minutos por partido (promedio)', jug.partidos ? String(Math.round(jug.minutos / jug.partidos)) : null],
       [maxMin ? `% min. posibles (${jornadasTxt(comp)})` : '% de minutos posibles',
         maxMin ? `${Math.round((jug.minutos / maxMin) * 100)}%` : null],
     ]);
