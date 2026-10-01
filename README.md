@@ -102,25 +102,29 @@ Las fotos se igualan solas: se detecta al jugador (fondo blanco o transparente),
 para que todos ocupen el mismo alto. Si los quieres más grandes o más chicos: `FOTO_ALTO_JUGADOR`
 en `config.py` (0.86 por defecto).
 
-## 4. Cambiar atributos (catálogo)
+## 4. Catálogo de stats (y cómo regresar)
 
-Todo en `config.py`:
+En `config.py`, sección 3:
 
-- `METRICAS`: nombre que sale en la ficha → (columna del Excel, "conteo" | "porcentaje").
-- `CATALOGO_POSICIONES`: por posición, qué métricas van en **Ofensiva / Defensiva / Posesión**.
-  El número de barras por sección es libre; la ficha ajusta el alto de las filas sola.
-- `MODO_VALORES`: `"total"` (actual) o `"per90"`.
-- `GRUPO_COMPARACION`: para la mejora futura. Por métrica define contra quién se saca el máximo:
-  `"todos"` (actual), `"posicion"` o una lista de posiciones:
-  ```python
-  GRUPO_COMPARACION = {
-      "Duelos defensivos ganados": "posicion",
-      "Centros a destino": ["Lateral por derecha", "Lateral por izquierda",
-                            "Volante por derecha", "Volante por izquierda"],
-  }
-  ```
+```python
+CATALOGO_ACTIVO = "estandarizado"     # o "inicial"
+```
 
-Luego `actualizar.bat`.
+- **estandarizado**: 15 stats por posición (5 Ofensiva, 5 Defensiva, 5 Posesión). Cada una dice contra
+  quién se compara: `"liga"` (máximo de toda la liga) o `"grupo"` (máximo de su grupo de posición:
+  Centrales, Laterales, Medios = volante defensivo + ofensivo, Bandas, Delanteros, Porteros).
+  En la ficha se ve a la derecha de cada barra: `máx 28 · Liga`, `máx 20 · Centrales`.
+- **inicial**: el catálogo temporal del cuaderno de radares, todo contra la liga.
+- Para regresar: cambia la palabra y corre `actualizar.bat`.
+
+Editar una stat: en `CATALOGO_ESTANDARIZADO` cambia el nombre o el `"liga"`/`"grupo"`. Si la stat es
+nueva, agrégala primero en `METRICAS` (nombre en la ficha → columna exacta del Excel).
+
+**Porteros**: su Matrix va en `CARPETA_PORTEROS` (`datos/porteros`), solo los datos. Sus fotos, mapas y NUI
+van con todos los demás, y aparecen en la misma lista de la página. Sus stats están en `METRICAS_PORTERO`
+y sus secciones son Atajadas, Área y juego aéreo, Distribución.
+
+Jugadores sin minutos: su ficha sale sin barras, con el aviso "Sin minutos registrados…".
 
 ## 5. Cambiar el diseño del PDF
 

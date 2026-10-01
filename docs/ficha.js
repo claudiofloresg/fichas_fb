@@ -157,7 +157,7 @@ const Ficha = (() => {
     const eyebrow = ['FICHA DE JUGADOR', comp.label, jornadasTxt(comp)].filter(Boolean).join('   ·   ');
     t(eyebrow.toUpperCase(), xT, 38, { font: f.bold, size: 8, color: C.gold, maxW: R - xT });
     t(jug.nombre.toUpperCase(), xT, 64, { font: f.bold, size: 24, color: C.navy, maxW: R - xT, minSize: 13 });
-    // equipo de registro; si juega en una categoría superior o también tiene minutos en otra, se indica
+    // equipo de registro; si es de otra categoría o también tiene minutos en otra, se indica
     let lineaEquipo = jug.equipo || '';
     //if (jug.subido) lineaEquipo += `   ·   Registrado en U${jug.categoria}, stats de ${comp.label}`;
     //else if (jug.tambienEn && jug.tambienEn.length) lineaEquipo += `   ·   También con minutos en ${jug.tambienEn.join(', ')}`;
@@ -216,19 +216,23 @@ const Ficha = (() => {
 
     // ---------- secciones con barras
     const S = DISENO.secciones;
-    const secs = meta.secciones.map(s => [s, (jug.secciones && jug.secciones[s]) || []]);
+    const nombresSec = jug.ordenSecciones || meta.secciones;   // porteros traen sus propias secciones
+    const secs = nombresSec.map(s => [s, (jug.secciones && jug.secciones[s]) || []]);
     const nFilas = secs.reduce((a, [, fs]) => a + fs.length, 0);
     let yy = S.yIni;
     if (!nFilas) {
-      const aviso = !jug.conDatos
-        ? `Sin minutos registrados en ${comp.label}${comp.jornadas ? ' (' + jornadasTxt(comp) + ')' : ''}.`
-        : `Sin catálogo de atributos para la posición "${jug.posicion}".`;
-      r(M, yy, R - M, 60, C.placeholder);
-      t(aviso, P.w / 2, yy + 34, { size: 10, color: C.soft, align: 'center', font: f.ital });
+      // jugador sin minutos (o posición sin catálogo): recuadro gris con aviso
+      const [aviso1, aviso2] = !jug.conDatos
+        ? [`Sin minutos registrados en ${comp.label}${comp.jornadas ? ' (' + jornadasTxt(comp) + ')' : ''}.`,
+           'No se cuenta con datos suficientes para un análisis estadístico.']
+        : [`Sin catálogo de atributos para la posición "${jug.posicion}".`, ''];
+      r(M, yy, R - M, 64, C.placeholder);
+      t(aviso1, P.w / 2, yy + (aviso2 ? 28 : 36), { font: f.bold, size: 10, color: C.soft, align: 'center' });
+      if (aviso2) t(aviso2, P.w / 2, yy + 44, { size: 9, color: C.soft, align: 'center', font: f.ital });
     } else {
       const disp = S.yFin - S.yIni - secs.length * (S.header + S.gap);
       const fh = Math.max(S.filaMin, Math.min(S.filaMax, disp / nFilas));
-      const xLab = M + 6, xVal = 262, xBar = 272, xBarEnd = 530, xMax = 538;
+      const xLab = M + 6, xVal = 262, xBar = 272, xBarEnd = 498, xMax = 506;
       for (const [sec, filas] of secs) {
         const col = hex(DISENO.barra), colLinea = hex(DISENO.lineaSeccion);
         // título centrado con líneas a los lados
@@ -246,7 +250,7 @@ const Ficha = (() => {
         }
         const size = Math.min(9.5, fh * 0.6);
         const bh = Math.min(10, fh * 0.52);
-        filas.forEach(([nombre, val, max, tipo], i) => {
+        filas.forEach(([nombre, val, max, tipo, contra], i) => {
           if (i % 2 === 0) r(M, yy, R - M, fh, C.zebra);
           const base = yy + fh / 2 + size * 0.35;
           t(nombre, xLab, base, { size, maxW: xVal - xLab - 44 });
@@ -255,7 +259,9 @@ const Ficha = (() => {
           r(xBar, by, xBarEnd - xBar, bh, C.track);
           const frac = (val != null && max) ? Math.max(0, Math.min(1, val / max)) : 0;
           if (frac > 0) r(xBar, by, (xBarEnd - xBar) * frac, bh, col);
-          t(max != null ? `máx ${fmt(max, tipo, meta.modo)}` : '', xMax, base, { size: Math.min(7.5, size - 1), color: C.faint });
+          // máximo de referencia + contra quién se compara (Liga, Centrales, Laterales, Medios, Bandas, Delanteros, Porteros)
+          const maxTxt = max != null ? `máx ${fmt(max, tipo, meta.modo)}${contra ? ' · ' + contra : ''}` : '';
+          t(maxTxt, xMax, base, { size: Math.min(7.5, size - 1), color: C.faint, maxW: R - xMax });
           yy += fh;
         });
         yy += S.gap;
@@ -269,7 +275,7 @@ const Ficha = (() => {
       { size: 7, color: C.faint, maxW: 250 });
     t(`Datos al ${meta.generado.split(' ')[0]}`, R, yp + 12, { size: 7, color: C.faint, align: 'right' });
     const modoTxt = meta.modo === 'per90' ? 'valores por 90 minutos' : 'valores totales';
-    t(`Barra: valor del jugador respecto al máximo de toda la liga (${modoTxt}).`, M, yp + 24,
+    t(`Barra: valor del jugador respecto al máximo de la liga o de su grupo de posición, indicado a la derecha (${modoTxt}).`, M, yp + 24,
       { size: 7, color: C.faint });
     t(DISENO.credito, P.w / 2, yp + 38, { font: f.bold, size: 8.5, color: C.navy, align: 'center' });
   }
