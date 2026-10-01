@@ -150,7 +150,7 @@ METRICAS = {
     "Recuperaciones 3/4":           ("Recuperaciones de balón 3/4", "conteo"),
     "Recuperaciones 4/4":           ("Recuperaciones de balón 4/4", "conteo"),
     # --- agregadas para el catálogo estandarizado ---
-    "Regates acertados":            ("Regates acertados", "conteo"),
+    "Duelos ofensivos ganados":     ("Regates acertados", "conteo"),
     "Ocasión generada":             ("Ocasión generada", "conteo"),
     "Tiros a gol de cabeza":        ("Tiros a gol de cabeza", "conteo"),
     "Despejes":                     ("Despejes", "conteo"),
@@ -160,15 +160,15 @@ METRICAS = {
 
 # Métricas de PORTEROS (salen de la Matrix de porteros, CARPETA_PORTEROS)
 METRICAS_PORTERO = {
-    "Paradas":                      ("Paradas del Portero", "conteo"),
-    "Paradas atrapando el balón":   ("Paradas del portero atrapando el balón", "conteo"),
-    "Paradas sin retener":          ("Paradas del portero no se queda con el balón", "conteo"),
+    "Atajadas":                      ("Paradas del Portero", "conteo"),
+    "Atajadas sin rebote":   ("Paradas del portero atrapando el balón", "conteo"),
+    "Atajadas con rebote":          ("Paradas del portero no se queda con el balón", "conteo"),
     "Goles recibidos":              ("Goles recibidos", "conteo"),
     "Porterías en cero":            ("Porterías en cero", "conteo"),
     "Penales atajados":             ("Penales enfrentados por el portero atajado", "conteo"),
-    "Puñetazos":                    ("Puñetazos del portero", "conteo"),
+    "Rechaces con el puño":                    ("Puñetazos del portero", "conteo"),
     "Salidas fuera del área":       ("Salidas del portero fuera del área", "conteo"),
-    "Despejes a destino":           ("Despeje a destino", "conteo"),
+    "Despejes con destino":           ("Despeje a destino", "conteo"),
     "Despejes sin destino":         ("Despeje sin destino", "conteo"),
     "Pases acertados":              ("Pases del portero acertados", "conteo"),
     "Pases largos acertados":       ("Pases balón largo acertados", "conteo"),
@@ -202,7 +202,7 @@ SECCIONES_PORTERO = ["Atajadas", "Área y juego aéreo", "Distribución"]
 L, G = "liga", "grupo"
 
 _EST_LATERAL = {
-    "Ofensiva":  [("Asistencias", L), ("Ocasión generada", G), ("Regates acertados", G),
+    "Ofensiva":  [("Asistencias", L), ("Ocasión generada", G), ("Duelos ofensivos ganados", G),
                   ("Duelos ofensivos (%)", L), ("Faltas recibidas", L)],
     "Defensiva": [("Duelos defensivos ganados", L), ("Duelos defensivos (%)", L),
                   ("Intercepciones", L), ("Recuperaciones de balón", L), ("Duelos aéreos ganados", G)],
@@ -211,7 +211,7 @@ _EST_LATERAL = {
 }
 _EST_BANDA = {
     "Ofensiva":  [("Goles", L), ("Asistencias", L), ("Tiros a gol", L),
-                  ("Ocasión generada", L), ("Regates acertados", G)],
+                  ("Ocasión generada", L), ("Duelos ofensivos ganados", G)],
     "Defensiva": [("Duelos defensivos ganados", L), ("Duelos defensivos (%)", L),
                   ("Recuperaciones de balón", L), ("Recuperaciones cancha rival", L), ("Intercepciones", G)],
     "Posesión":  [("Centros", G), ("Centros a destino", G), ("Pases acertados 3/4", G),
@@ -220,7 +220,7 @@ _EST_BANDA = {
 
 CATALOGO_ESTANDARIZADO = {
     "Defensa central": {
-        "Ofensiva":  [("Goles", G), ("Tiros a gol de cabeza", L), ("Regates acertados", G),
+        "Ofensiva":  [("Goles", G), ("Tiros a gol de cabeza", L), ("Duelos ofensivos ganados", G),
                       ("Duelos ofensivos (%)", L), ("Faltas recibidas", G)],
         "Defensiva": [("Duelos defensivos ganados", G), ("Duelos defensivos (%)", L),
                       ("Duelos aéreos ganados", L), ("Intercepciones", L), ("Despejes", L)],
@@ -231,7 +231,7 @@ CATALOGO_ESTANDARIZADO = {
     "Lateral por izquierda": _EST_LATERAL,
     "Volante defensivo": {
         "Ofensiva":  [("Asistencias", L), ("Ocasión generada", G), ("Tiros a gol", G),
-                      ("Regates acertados", G), ("Faltas recibidas", G)],
+                      ("Duelos ofensivos ganados", G), ("Faltas recibidas", G)],
         "Defensiva": [("Duelos defensivos ganados", L), ("Duelos defensivos (%)", L),
                       ("Intercepciones", L), ("Recuperaciones de balón", L), ("Duelos aéreos ganados", G)],
         "Posesión":  [("Pases acertados", G), ("Pases acertados (%)", L), ("Pases acertados 2/4", G),
@@ -239,7 +239,7 @@ CATALOGO_ESTANDARIZADO = {
     },
     "Volante ofensivo": {
         "Ofensiva":  [("Goles", L), ("Asistencias", L), ("Tiros a gol", G),
-                      ("Ocasión generada", G), ("Regates acertados", G)],
+                      ("Ocasión generada", G), ("Duelos ofensivos ganados", G)],
         "Defensiva": [("Duelos defensivos ganados", G), ("Duelos defensivos (%)", L),
                       ("Recuperaciones de balón", L), ("Recuperaciones cancha rival", G), ("Intercepciones", G)],
         "Posesión":  [("Pases acertados", G), ("Pases acertados (%)", L), ("Pases acertados 3/4", G),
@@ -257,10 +257,10 @@ CATALOGO_ESTANDARIZADO = {
     },
     # Porteros: se comparan contra todos los porteros de su liga (Matrix de porteros)
     "Portero": {
-        "Atajadas":           [("Paradas", L), ("Paradas atrapando el balón", L), ("Goles recibidos", L),
+        "Atajadas":           [("Atajadas", L), ("Atajadas sin rebote", L), ("Goles recibidos", L),
                                ("Porterías en cero", L), ("Penales atajados", L)],
-        "Área y juego aéreo": [("Puñetazos", L), ("Salidas fuera del área", L), ("Paradas sin retener", L),
-                               ("Despejes a destino", L), ("Despejes sin destino", L)],
+        "Área y juego aéreo": [("Rechaces con el puño", L), ("Salidas fuera del área", L), ("Atajadas con rebote", L),
+                               ("Despejes con destino", L), ("Despejes sin destino", L)],
         "Distribución":       [("Pases acertados", L), ("Pases largos acertados", L),
                                ("Saques de meta cortos acertados", L), ("Saques de meta largos acertados", L),
                                ("Saques con la mano acertados", L)],
