@@ -12,7 +12,7 @@ const DISENO = {
   // Colores de la ficha = colores del club: barras azul marino, líneas de sección oro
   barra: '#0C2A4E',
   lineaSeccion: '#B9902E',
-  foto: { x: 36, y: 122, w: 86, h: 108 },
+  foto: { x: 36, y: 123, w: 86, h: 108 },
   datos: { x: 134, w: 116 },      // columna "Datos del jugador"
   minutos: { x: 262, w: 104 },    // columna "Minutos de juego"
   mapa: { x: 380, y: 112, w: 196, h: 124 },
