@@ -12,10 +12,10 @@ const DISENO = {
   // Colores de la ficha = colores del club: barras azul marino, líneas de sección oro
   barra: '#0C2A4E',
   lineaSeccion: '#B9902E',
-  foto: { x: 36, y: 112, w: 96, h: 120 },
-  datos: { x: 146, w: 116 },      // columna "Datos del jugador"
-  minutos: { x: 274, w: 106 },    // columna "Minutos de juego"
-  mapa: { x: 396, y: 112, w: 180, h: 124 },
+  foto: { x: 36, y: 112, w: 84, h: 105 },
+  datos: { x: 134, w: 116 },      // columna "Datos del jugador"
+  minutos: { x: 262, w: 104 },    // columna "Minutos de juego"
+  mapa: { x: 380, y: 112, w: 196, h: 124 },
   secciones: { yIni: 254, yFin: 724, header: 24, gap: 6, filaMin: 14, filaMax: 22 },
   credito: 'Elaborado por Inteligencia Deportiva Pumas',
   fuente: 'GolStats',
@@ -232,7 +232,7 @@ const Ficha = (() => {
     } else {
       const disp = S.yFin - S.yIni - secs.length * (S.header + S.gap);
       const fh = Math.max(S.filaMin, Math.min(S.filaMax, disp / nFilas));
-      const xLab = M + 6, xVal = 262, xBar = 272, xBarEnd = 498, xMax = 506;
+      const xLab = M + 6, xVal = 262, xBar = 272, xBarEnd = 530, xMax = 538;
       for (const [sec, filas] of secs) {
         const col = hex(DISENO.barra), colLinea = hex(DISENO.lineaSeccion);
         // título centrado con líneas a los lados
@@ -260,7 +260,7 @@ const Ficha = (() => {
           const frac = (val != null && max) ? Math.max(0, Math.min(1, val / max)) : 0;
           if (frac > 0) r(xBar, by, (xBarEnd - xBar) * frac, bh, col);
           // máximo de referencia + contra quién se compara (Liga, Centrales, Laterales, Medios, Bandas, Delanteros, Porteros)
-          const maxTxt = max != null ? `máx ${fmt(max, tipo, meta.modo)}${contra ? ' · ' + contra : ''}` : '';
+          const maxTxt = max != null ? `máx ${fmt(max, tipo, meta.modo)}` : '';
           t(maxTxt, xMax, base, { size: Math.min(7.5, size - 1), color: C.faint, maxW: R - xMax });
           yy += fh;
         });
@@ -275,7 +275,7 @@ const Ficha = (() => {
       { size: 7, color: C.faint, maxW: 250 });
     t(`Datos al ${meta.generado.split(' ')[0]}`, R, yp + 12, { size: 7, color: C.faint, align: 'right' });
     const modoTxt = meta.modo === 'per90' ? 'valores por 90 minutos' : 'valores totales';
-    t(`Barra: valor del jugador respecto al máximo de la liga o de su grupo de posición, indicado a la derecha (${modoTxt}).`, M, yp + 24,
+    t(`Barra: valor del jugador respecto al máximo de la liga o de su grupo de posición (${modoTxt}).`, M, yp + 24,
       { size: 7, color: C.faint });
     t(DISENO.credito, P.w / 2, yp + 38, { font: f.bold, size: 8.5, color: C.navy, align: 'center' });
   }

@@ -228,14 +228,24 @@ def procesar_foto(src, dst):
         return
     y0, y1, x0, x1 = filas.min(), filas.max() + 1, cols.min(), cols.max() + 1
     sujeto = im.crop((x0, y0, x1, y1))
-    esc = (cfg("FOTO_ALTO_JUGADOR", 0.86) * H) / sujeto.height
-    sujeto = sujeto.resize((max(1, round(sujeto.width * esc)), max(1, round(sujeto.height * esc))), Image.LANCZOS)
-    # centrado horizontal usando el centro de la cabeza (tercio superior del sujeto)
+    original = sujeto
+    m0 = _mascara_jugador(original)
+    banda = np.where(m0[int(original.height * 0.9):].any(axis=0))[0]          # hombros (10% de abajo)
+    ancho_hombros = (banda.max() - banda.min() + 1) if len(banda) else original.width
+    esc = (cfg("FOTO_ALTO_JUGADOR", 0.86) * H) / original.height
+    esc = max(esc, (W * 1.02) / ancho_hombros)        # que los hombros llenen todo el ancho (sin huecos a los lados)
+    sujeto = original.resize((max(1, round(original.width * esc)), max(1, round(original.height * esc))), Image.LANCZOS)
     m2 = _mascara_jugador(sujeto)
+    # centrado horizontal usando el centro de la cabeza (tercio superior del sujeto)
     cabeza = np.where(m2[: max(1, sujeto.height // 3)])[1]
     cx = cabeza.mean() if len(cabeza) else sujeto.width / 2
+    hombros = np.where(m2[int(sujeto.height * 0.9):].any(axis=0))[0]
     x = round(W / 2 - cx)
-    y = H - sujeto.height
+    if len(hombros):                                   # sin hueco blanco a la izquierda ni a la derecha
+        x = min(x, -int(hombros.min()))
+        x = max(x, W - int(hombros.max()) - 1)
+    # pegado abajo; si quedó más alto que el recuadro, se deja un margen arriba y se recorta el torso
+    y = H - sujeto.height if sujeto.height <= H * 0.96 else round(H * 0.04)
     lienzo.paste(sujeto, (x, y), sujeto)
     lienzo.save(dst, "JPEG", quality=88, optimize=True)
 
