@@ -12,7 +12,7 @@ const DISENO = {
   // Colores de la ficha = colores del club: barras azul marino, líneas de sección oro
   barra: '#0C2A4E',
   lineaSeccion: '#B9902E',
-  foto: { x: 36, y: 112, w: 84, h: 105 },
+  foto: { x: 36, y: 128, w: 86, h: 108 },
   datos: { x: 134, w: 116 },      // columna "Datos del jugador"
   minutos: { x: 262, w: 104 },    // columna "Minutos de juego"
   mapa: { x: 380, y: 112, w: 196, h: 124 },
@@ -180,8 +180,8 @@ const Ficha = (() => {
       l(x, y0 + 10, x + w, y0 + 10, hex(DISENO.colores.gold), 1.2);
     };
     const bloque = (txt, col, filas) => {
-      titulo(txt, col.x, col.w, F.y);
-      let y = F.y + 22;
+      titulo(txt, col.x, col.w, DISENO.mapa.y);
+      let y = DISENO.mapa.y + 22;
       for (const [lab, val] of filas) {
         t(lab, col.x, y, { size: 7, color: C.soft, maxW: col.w });
         t(val ?? '–', col.x, y + 11.5, { font: f.bold, size: 10.5, color: C.ink, maxW: col.w, minSize: 7 });
