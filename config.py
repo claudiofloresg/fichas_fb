@@ -359,3 +359,46 @@ FOTO_ALTO_JUGADOR = 0.86
 #   2) nombre completo   ->  José Humberto Mancilla López.png
 #   3) nombre de la Matrix -> Humberto Mancilla.png
 MAPA_LADO_MAX = 900             # px, el mapa se reduce sin recortar
+
+# =============================================================================
+# 7) INFORME GRÁFICO (PDF horizontal con radares)
+# =============================================================================
+# Mapas de calor POR LIGA: cada liga toma los de su subcarpeta de CARPETA_MAPAS
+#   datos/mapas/u19/151446.png   -> mapa del jugador en la liga U19
+#   datos/mapas/u21/151446.png   -> mapa del mismo jugador en la liga U21
+# (la subcarpeta puede llamarse U19, u19, Sub19, Sub-19...). Si no está en la subcarpeta
+# de esa liga, se usa el que esté suelto en CARPETA_MAPAS (si hay).
+
+# Radar vs promedio: el promedio se calcula con los jugadores de la liga (o de su
+# grupo de posición, igual que el máximo de cada stat) que tengan al menos estos minutos.
+INFORME_MIN_MINUTOS_PROMEDIO = 270
+
+# "Estadísticas": las 15 stats del catálogo. Si la stat tiene un % relacionado en el
+# Excel, se muestra el % en grande y el dato crudo abajo (ej. 23% / 22 Duelos ofensivos ganados).
+# Si no tiene %, se muestra el dato crudo. Si la stat (%) y su conteo están los dos en el
+# catálogo, salen juntos en un solo dato.
+#   columna del conteo en el Excel  ->  columna del % en el Excel
+INFORME_PORCENTAJES = {
+    "Regates acertados":         "% de duelos ofensivos ganados",
+    "Duelos defensivos ganados": "% de duelos defensivos ganados",
+    "Pases acertados":           "% total de pases acertados",
+    "Pases acertados 1/4":       "% de pases acertados 1/4",
+    "Pases acertados 2/4":       "% de pases acertados 2/4",
+    "Pases acertados 3/4":       "% de pases acertados 3/4",
+    "Pases acertados 4/4":       "% de pases acertados 4/4",
+    "Centros a destino":         "% de centros totales acertados",
+    "Centros":                   "% de centros totales acertados",
+    "Tiros a gol de cabeza":     "% de tiros con destino a portería de cabeza",
+}
+
+# Canchitas por cuartos (1/4 = cuarto propio ... 4/4 = cuarto rival).
+#   (título, columna base del Excel sin " 1/4", tipo)
+#   tipo: "conteo", "porcentaje" o "balance" (balance = columna A - columna B)
+INFORME_ZONAS = [
+    ("Recuperaciones", "Recuperaciones de balón", "conteo"),
+    ("Pérdidas", "Pérdidas por despojo", "conteo"),
+    ("Balance", ("Recuperaciones de balón", "Pérdidas por despojo"), "balance"),
+    ("Pases acertados", "Pases acertados", "conteo"),
+    ("Pases fallados", "Pases no acertados", "conteo"),
+    ("% de acierto", "% de pases acertados", "porcentaje"),
+]

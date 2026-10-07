@@ -98,6 +98,16 @@ Se buscan en este orden (se ignoran mayúsculas, acentos y espacios; también en
 2. nombre completo del registro → `José Humberto Mancilla López.png`
 3. nombre de la Matrix → `Humberto Mancilla.png`
 
+**Mapas de calor por liga**: cada liga toma los suyos de su subcarpeta, porque un jugador que juega
+en las dos tiene un mapa distinto en cada una:
+
+```
+datos/mapas/u19/151446.png    -> mapa en la liga U19
+datos/mapas/u21/151446.png    -> mapa en la liga U21
+```
+
+(La subcarpeta puede llamarse U19, u19, Sub19, Sub-19…). Si no está en la subcarpeta, se usa uno suelto en `datos/mapas`.
+
 Las fotos se igualan solas: se detecta al jugador (fondo blanco o transparente), se recorta y se escala
 para que todos ocupen el mismo alto. Si los quieres más grandes o más chicos: `FOTO_ALTO_JUGADOR`
 en `config.py` (0.86 por defecto).
@@ -131,6 +141,23 @@ Jugadores sin minutos: su ficha sale sin barras, con el aviso "Sin minutos regis
 `docs/ficha.js`, objeto `DISENO` al inicio: colores de cada sección, posiciones de la foto, mapa,
 textos del pie. Medidas en puntos (72 pt = 1 pulgada; carta = 612 × 792).
 Logo: reemplaza `docs/assets/logo.png`.
+
+## 5b. Informe gráfico (PDF horizontal con radares)
+
+En la página, junto a "Descargar PDF", el selector **Formato**: `Ficha (carta)` o `Informe gráfico`.
+Los dos usan los mismos datos y el mismo catálogo; los botones de un jugador y de toda la plantilla
+respetan el formato elegido.
+
+- Diseño: `docs/informe.js`, objeto `DISENO_INFORME` (posiciones, colores, textos). Página 960 × 540 pt.
+- Fondo: `docs/assets/fondo_informe.jpg` (para cambiarlo, reemplaza la imagen, 1920 × 1080).
+- Radar del jugador: sector completo = máximo (liga o grupo, igual que la barra de la ficha); color = valor
+  del jugador; colores por tercios en orden: Ofensiva, Posesión, Defensiva.
+- Radar vs promedio: azul = jugador, naranja = promedio de la liga o de su grupo, solo jugadores con
+  `INFORME_MIN_MINUTOS_PROMEDIO` minutos o más (`config.py`, sección 7).
+- Estadísticas: minutos, partidos, % de minutos posibles y las 15 stats del catálogo. Si una stat tiene
+  un % en el Excel, sale el % en grande y el dato crudo abajo; la relación stat → % está en
+  `INFORME_PORCENTAJES` (`config.py`, sección 7). Sin %, sale el dato crudo.
+- Canchitas por cuartos: `INFORME_ZONAS` (`config.py`, sección 7).
 
 ## 6. Probar en tu compu antes de publicar
 

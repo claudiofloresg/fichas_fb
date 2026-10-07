@@ -18,7 +18,7 @@ Flujo
 Genera
   docs/data/fichas.js      datos que usa la página
   docs/img/fotos/*.jpg     fotos igualadas en tamaño
-  docs/img/mapas/*.jpg     mapas de calor reducidos
+  docs/img/mapas/*.jpg     mapas de calor reducidos (uno por jugador y liga)
   reporte_build.txt        quién no tiene foto/mapa/minutos, empates dudosos, etc.
 """
 import difflib
@@ -185,6 +185,26 @@ def indexar_imagenes(carpeta):
             if ext.lower() in C.EXTENSIONES_IMAGEN:
                 idx.setdefault(slug(stem), os.path.join(raiz, a))
     return idx
+
+
+def indexar_mapas(carpeta):
+    """Mapas de calor: {categoria: indice} por subcarpeta (U19, U21...) + None: sueltos en la raíz."""
+    out = {None: {}}
+    carpeta = ruta(carpeta)
+    if not os.path.isdir(carpeta):
+        print(f"  [aviso] no existe la carpeta {carpeta}")
+        return out
+    for a in sorted(os.listdir(carpeta)):
+        p = os.path.join(carpeta, a)
+        if os.path.isdir(p):
+            cat = categoria(a)
+            if cat is None:
+                print(f"  [aviso] mapas: la subcarpeta '{a}' no indica liga (U19, U21...); se omite")
+                continue
+            out.setdefault(cat, {}).update(indexar_imagenes(p))
+        elif os.path.splitext(a)[1].lower() in C.EXTENSIONES_IMAGEN:
+            out[None].setdefault(slug(os.path.splitext(a)[0]), p)
+    return out
 
 
 def buscar_imagen(idx, *claves):
@@ -385,6 +405,10 @@ def leer_matrix(path, es_portero=False):
     titulo = pd.read_excel(path, sheet_name=C.HOJA_EXCEL, header=None, nrows=1).iloc[0, 0]
     df = pd.read_excel(path, sheet_name=C.HOJA_EXCEL, header=C.FILA_ENCABEZADO)
     df.columns = [str(c).strip() for c in df.columns]
+    if C.COL_JUGADOR not in df.columns:
+        print(f"  [aviso] {os.path.basename(path)}: no trae la columna '{C.COL_JUGADOR}' en la fila "
+              f"{C.FILA_ENCABEZADO + 1} (formato distinto); se omite")
+        return None
     df = df[df[C.COL_JUGADOR].notna() & (df[C.COL_JUGADOR].astype(str).str.strip() != "")].reset_index(drop=True)
     label = etiqueta_competencia(stem)
     es_pumas = df[C.COL_EQUIPO].astype(str).map(slug).str.contains(slug(C.FILTRO_EQUIPO_FICHAS), regex=False)
@@ -417,6 +441,7 @@ def leer_matrix(path, es_portero=False):
         valores[m] = v
 
     ref = minutos >= C.MIN_MINUTOS_REFERENCIA
+    ref_prom = minutos >= cfg("INFORME_MIN_MINUTOS_PROMEDIO", 270)
     cache = {}
 
     def maximo(m, posicion, comp):
@@ -435,10 +460,36 @@ def leer_matrix(path, es_portero=False):
             cache[key] = float(s.max()) if len(s) else None
         return cache[key]
 
+    def promedio(m, posicion, comp):
+        """Promedio (informe gráfico) del mismo grupo que el máximo, solo con jugadores con
+        al menos INFORME_MIN_MINUTOS_PROMEDIO minutos."""
+        if comp == "grupo":
+            mask = ref_prom & (grupo == grupos.get(posicion, posicion))
+            key = (m, "prom_g", grupos.get(posicion, posicion))
+        elif comp == "liga":
+            mask, key = ref_prom, (m, "prom_liga")
+        else:
+            gs = grupo_de(m, posicion)
+            mask = ref_prom if gs is None else ref_prom & pos_cat.isin(gs)
+            key = (m, "prom", None if gs is None else tuple(sorted(gs)))
+        if key not in cache:
+            s = valores[m][mask].dropna()
+            cache[key] = float(s.mean()) if len(s) else None
+        return cache[key]
+
+    def crudo(col, i):
+        """Valor crudo de una columna del Excel (tolera dobles espacios). None si no existe."""
+        real = col if col in df.columns else por_texto.get(re.sub(r"\s+", " ", col))
+        if real is None:
+            return None
+        v = to_number(df.at[i, real])
+        return None if math.isnan(v) else float(v)
+
     return {
         "path": path, "stem": stem, "label": label, "cat": cat, "titulo": titulo, "es_portero": es_portero,
         "jornadas": jornadas(stem, titulo), "df": df, "es_pumas": es_pumas,
         "minutos": minutos, "pos_cat": pos_cat, "valores": valores, "maximo": maximo, "faltan": faltan,
+        "promedio": promedio, "crudo": crudo,
     }
 
 
@@ -499,6 +550,32 @@ def empatar(fuentes, label, cat, candidatos, rep):
     return asignado
 
 
+def desglose_stats(src_mx, i, posicion):
+    """Informe gráfico, cuadro "Estadísticas": las stats del catálogo con su % relacionado.
+    Devuelve [[seccion, etiqueta, valor_grande, tipo_grande, dato_crudo_abajo], ...]."""
+    metricas = metricas_de(posicion)
+    norm = lambda c: re.sub(r"\s+", " ", str(c)).strip()  # noqa: E731
+    pct_de = {norm(k): v for k, v in cfg("INFORME_PORCENTAJES", {}).items()}
+    items = [(sec, m) for sec, its in secciones_de(posicion) for m, _ in its]
+    cols_conteo = {norm(metricas[m][0]) for _, m in items if metricas[m][1] != "porcentaje"}
+    out = []
+    for sec, m in items:
+        col, tipo = metricas[m]
+        v = src_mx["valores"][m][i]
+        v = None if v is None or (isinstance(v, float) and math.isnan(v)) else float(v)
+        if tipo == "porcentaje":
+            socios = [c for c, p in pct_de.items() if norm(p) == norm(col)]
+            if any(c in cols_conteo for c in socios):
+                continue                                  # ya sale junto con su conteo
+            crudo = src_mx["crudo"](socios[0], i) if socios else None
+            out.append([sec, re.sub(r"\s*\(%\)\s*$", "", m), num(v, 1), "porcentaje", num(crudo, 1)])
+        elif norm(col) in pct_de and src_mx["crudo"](pct_de[norm(col)], i) is not None:
+            out.append([sec, m, num(src_mx["crudo"](pct_de[norm(col)], i), 1), "porcentaje", num(v, 1)])
+        else:
+            out.append([sec, m, num(v, 1), "conteo", None])
+    return out
+
+
 def leer_carpeta(carpeta):
     carpeta = ruta(carpeta)
     if not os.path.isdir(carpeta):
@@ -519,8 +596,9 @@ def main():
         os.makedirs(d, exist_ok=True)
 
     idx_fotos = indexar_imagenes(C.CARPETA_FOTOS)
-    idx_mapas = indexar_imagenes(C.CARPETA_MAPAS)
-    print(f"Fotos encontradas: {len(idx_fotos)}   Mapas encontrados: {len(idx_mapas)}")
+    idx_mapas = indexar_mapas(C.CARPETA_MAPAS)
+    print(f"Fotos encontradas: {len(idx_fotos)}   Mapas encontrados: "
+          + ", ".join(f"{'sueltos' if k is None else f'U{k}'} {len(v)}" for k, v in idx_mapas.items() if v or k is None))
 
     registro = cargar_registro()
     for k, r in enumerate(registro):
@@ -535,6 +613,8 @@ def main():
     porteros = {}
     for p in leer_carpeta(cfg("CARPETA_PORTEROS", "datos/porteros")):
         mp = leer_matrix(p, es_portero=True)
+        if mp is None:
+            continue
         if mp["cat"] is None:
             print(f"  [aviso] porteros: no pude detectar la categoría de {os.path.basename(p)}; se omite")
             continue
@@ -553,6 +633,8 @@ def main():
     alias = {}               # rid -> nombres con los que aparece en las Matrix (para buscar fotos)
     for path in excels:
         mx = leer_matrix(path)
+        if mx is None:
+            continue
         cat = mx["cat"]
         print(f"\n== {mx['label']}  ({os.path.basename(path)}) — categoría U{cat}, {len(mx['df'])} jugadores en la liga")
         if cat is None:
@@ -605,14 +687,15 @@ def main():
                 usados_img.add(foto)
             else:
                 rep["sin_foto"].append(r["nombre"])
-            src = buscar_imagen(idx_mapas, r["nui"], r["nombre"], *alias.get(r["rid"], []))
+            claves = (r["nui"], r["nombre"], *alias.get(r["rid"], []))
+            src = buscar_imagen(idx_mapas.get(cat, {}), *claves) or buscar_imagen(idx_mapas[None], *claves)
             if src:
-                mapa = f"img/mapas/{r['id']}.jpg"
+                mapa = f"img/mapas/{r['id']}_u{cat}.jpg"
                 if mapa not in usados_img:
                     procesar_mapa(src, os.path.join(DOCS, mapa))
                 usados_img.add(mapa)
             else:
-                rep["sin_mapa"].append(r["nombre"])
+                rep["sin_mapa"].append(f"[{mx['label']}] {r['nombre']}")
 
             # barras: solo si tiene minutos (sin minutos -> la ficha muestra un aviso)
             secciones, orden = {}, []
@@ -630,9 +713,30 @@ def main():
                         else:
                             ref_txt = "Liga"
                         filas.append([m, num(src_mx["valores"][m][i], dec),
-                                      num(src_mx["maximo"](m, posicion, comp), dec), tipo, ref_txt])
+                                      num(src_mx["maximo"](m, posicion, comp), dec), tipo, ref_txt,
+                                      num(src_mx["promedio"](m, posicion, comp), 2)])
                     secciones[sec] = filas
                     orden.append(sec)
+
+            # informe gráfico: participación (goles, asistencias...) y canchitas por cuartos
+            informe = None
+            if con_datos:
+                es_por = posicion == "Portero"
+                desglose = desglose_stats(src_mx, i, posicion)
+                zonas = None
+                if not es_por and cfg("INFORME_ZONAS"):
+                    zonas = []
+                    for titulo, col, tipo in C.INFORME_ZONAS:
+                        if tipo == "balance":
+                            a = [src_mx["crudo"](f"{col[0]} {q}/4", i) for q in (1, 2, 3, 4)]
+                            b = [src_mx["crudo"](f"{col[1]} {q}/4", i) for q in (1, 2, 3, 4)]
+                            vals = [None if x is None or y is None else x - y for x, y in zip(a, b)]
+                        else:
+                            vals = [src_mx["crudo"](f"{col} {q}/4", i) for q in (1, 2, 3, 4)]
+                        if all(v is None for v in vals):
+                            continue
+                        zonas.append([titulo, [num(v, 1) for v in vals], tipo])
+                informe = {"desglose": desglose, "zonas": zonas}
 
             if con_datos:
                 nac = fecha_txt(df.at[i, C.COL_NACIMIENTO]) if C.COL_NACIMIENTO in df.columns else None
@@ -663,6 +767,7 @@ def main():
                 "mapa": mapa,
                 "ordenSecciones": orden,
                 "secciones": secciones,
+                "informe": informe,
             })
 
         jugadores.sort(key=lambda j: (j["subido"], slug(j["nombre"])))
@@ -688,12 +793,15 @@ def main():
     for sub in ("fotos", "mapas"):
         d = os.path.join(DOCS, "img", sub)
         for f in os.listdir(d):
+            if os.path.isdir(os.path.join(d, f)):
+                continue
             if f"img/{sub}/{f}" not in usados_img and not f.startswith("."):
                 os.remove(os.path.join(d, f))
 
     payload = {
         "generado": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "modo": C.MODO_VALORES,
+        "minPromedio": cfg("INFORME_MIN_MINUTOS_PROMEDIO", 270),
         "secciones": C.SECCIONES,
         "competencias": competencias,
     }
@@ -705,7 +813,7 @@ def main():
     # Obliga al navegador a bajar la versión nueva de los .js (evita caché)
     idx = os.path.join(DOCS, "index.html")
     html = open(idx, encoding="utf-8").read()
-    html = re.sub(r'src="((?:data/fichas|ficha|app)\.js)(?:\?v=\d+)?"',
+    html = re.sub(r'src="((?:data/fichas|ficha|informe|app)\.js)(?:\?v=\d+)?"',
                   lambda m: f'src="{m.group(1)}?v={datetime.now():%Y%m%d%H%M%S}"', html)
     with open(idx, "w", encoding="utf-8") as f:
         f.write(html)

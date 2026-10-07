@@ -5,6 +5,15 @@
   const selComp = $('selComp'), selPos = $('selPos'), selReg = $('selReg'), txt = $('txtBuscar');
   const lista = $('lista'), count = $('count'), status = $('status');
   const btnPdf = $('btnPdf'), btnEquipo = $('btnEquipo'), frame = $('preview'), empty = $('empty');
+  const selFormato = $('selFormato');
+
+  // dos formatos: ficha carta (ficha.js) e informe gráfico horizontal (informe.js)
+  const FORMATOS = {
+    ficha: { gen: (js, c) => Ficha.generar(js, c, D), uno: 'Ficha', varios: 'Fichas' },
+    informe: { gen: (js, c) => Informe.generar(js, c, D), uno: 'Informe', varios: 'Informes' },
+  };
+  const formato = () => FORMATOS[selFormato.value] || FORMATOS.ficha;
+  try { const f = localStorage.getItem('formatoPdf'); if (FORMATOS[f]) selFormato.value = f; } catch (e) { /* sin storage */ }
 
   if (!D || !D.competencias || !D.competencias.length) {
     empty.textContent = 'No hay datos cargados. Corre actualizar.bat para generarlos.';
@@ -84,7 +93,7 @@
     count.textContent = `${js.length} jugador${js.length === 1 ? '' : 'es'}`;
     if (!js.length) { const v = document.createElement('li'); v.className = 'grupo'; v.textContent = 'Sin resultados'; lista.appendChild(v); }
     btnEquipo.disabled = !js.length;
-    btnEquipo.title = `Un PDF con las ${js.length} fichas de la lista (respeta filtros)`;
+    btnEquipo.title = `Un PDF con los ${js.length} jugadores de la lista (respeta filtros)`;
   }
 
   async function seleccionar(j) {
@@ -99,8 +108,9 @@
     history.replaceState(null, '', u);
     status.textContent = 'Generando vista previa…';
     try {
-      const bytes = await Ficha.generar([j], comp, D);
-      if (actual !== j) return;
+      const fmt = selFormato.value;
+      const bytes = await formato().gen([j], comp);
+      if (actual !== j || fmt !== selFormato.value) return;
       if (urlPrev) URL.revokeObjectURL(urlPrev);
       urlPrev = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
       frame.src = urlPrev + '#toolbar=0&navpanes=0&view=Fit';
@@ -124,8 +134,8 @@
     if (!actual || ocupado) return;
     ocupado = true; btnPdf.disabled = true;
     try {
-      const bytes = await Ficha.generar([actual], comp, D);
-      descargar(bytes, `Ficha_${nombreArchivo(actual.nombre)}_${nombreArchivo(comp.label)}.pdf`);
+      const bytes = await formato().gen([actual], comp);
+      descargar(bytes, `${formato().uno}_${nombreArchivo(actual.nombre)}_${nombreArchivo(comp.label)}.pdf`);
     } catch (e) { status.textContent = 'Error: ' + e.message; }
     ocupado = false; btnPdf.disabled = false;
   });
@@ -134,17 +144,21 @@
     const js = filtrados();
     if (!js.length || ocupado) return;
     ocupado = true; btnEquipo.disabled = true;
-    status.textContent = `Generando ${js.length} fichas…`;
+    status.textContent = `Generando ${js.length} ${formato().varios.toLowerCase()}…`;
     try {
-      const bytes = await Ficha.generar(js, comp, D);
-      descargar(bytes, `Fichas_Pumas_${nombreArchivo(comp.label)}${selPos.value ? '_' + nombreArchivo(selPos.value) : ''}.pdf`);
-      status.textContent = `Listo: ${js.length} fichas.`;
+      const bytes = await formato().gen(js, comp);
+      descargar(bytes, `${formato().varios}_Pumas_${nombreArchivo(comp.label)}${selPos.value ? '_' + nombreArchivo(selPos.value) : ''}.pdf`);
+      status.textContent = `Listo: ${js.length} ${formato().varios.toLowerCase()}.`;
     } catch (e) { status.textContent = 'Error: ' + e.message; }
     ocupado = false; btnEquipo.disabled = false;
   });
 
   selComp.addEventListener('change', () => { actual = null; cargarComp(); });
   selPos.addEventListener('change', pintarLista);
+  selFormato.addEventListener('change', () => {
+    try { localStorage.setItem('formatoPdf', selFormato.value); } catch (e) { /* sin storage */ }
+    if (actual) seleccionar(actual);
+  });
   selReg.addEventListener('change', pintarLista);
   txt.addEventListener('input', pintarLista);
 
