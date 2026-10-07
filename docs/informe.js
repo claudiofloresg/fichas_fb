@@ -142,7 +142,16 @@ const Informe = (() => {
       x: cx, y: Y(cy), size: rr, color: o.color, opacity: o.opacity,
       borderColor: o.border, borderWidth: o.border ? (o.bw || 0.75) : 0, borderDashArray: o.dash,
     });
-    return { t, r, l, path, circ, ancho };
+    // texto girado, centrado en (x, y); rot en grados (sentido antihorario)
+    const tr = (s, x, y, rot, o = {}) => {
+      const font = o.font || ctx.f.reg, size = o.size || 6;
+      s = limpio(font, s);
+      const w = font.widthOfTextAtSize(s, size), th = (rot * Math.PI) / 180;
+      const ox = x - Math.cos(th) * w / 2 + Math.sin(th) * size * 0.36;
+      const oy = Y(y) - Math.sin(th) * w / 2 - Math.cos(th) * size * 0.36;
+      page.drawText(s, { x: ox, y: oy, size, font, color: o.color || C.ink, rotate: PDFLib.degrees(rot) });
+    };
+    return { t, r, l, path, circ, ancho, tr };
   }
 
   const f2 = (n) => Math.round(n * 100) / 100;
@@ -253,16 +262,32 @@ const Informe = (() => {
       });
     }
 
-    // nombres de las stats alrededor
-    const size = 6.1, lh = 6.9;
+    // nombres de las stats alrededor, girados siguiendo el círculo (como PyPizza);
+    // en la mitad de abajo se voltean para que se lean derechos
+    const size = 5, lh = 6;
+    const maxW = Math.max(28, ((2 * Math.PI * (r + 8)) / N) * 0.95);   // ancho del sector a esa altura
+    const envolver = (txt) => {
+      const out = [];
+      txt.split(' ').forEach((p) => {
+        const prev = out.length ? out[out.length - 1] : null;
+        if (prev !== null && ancho(prev + ' ' + p, ctx.f.reg, size) <= maxW) out[out.length - 1] = prev + ' ' + p;
+        else out.push(p);
+      });
+      return out;
+    };
     filas.forEach((f, i) => {
       const a = i * paso + paso / 2;
-      const lineas = partir(f.m);
-      const w = Math.max(...lineas.map((s) => ancho(s, ctx.f.reg, size)));
-      const h = lineas.length * lh;
-      const [px, py] = pt(cx, cy, r + 7, a);
-      const bx = px + Math.sin(a) * w / 2, by = py - Math.cos(a) * h / 2;   // centro del bloque, empujado hacia afuera
-      lineas.forEach((s, k) => t(s, bx, by - h / 2 + lh * (k + 0.5) + size * 0.36, { size, color: C.ink, align: 'center' }));
+      const lineas = envolver(f.m);
+      const n = lineas.length;
+      const aDeg = (a * 180) / Math.PI;
+      const rot = -aDeg + (aDeg > 90 && aDeg < 270 ? 180 : 0);
+      const th = (rot * Math.PI) / 180;
+      const [bx, by] = pt(cx, cy, r + 5 + (n * lh) / 2, a);          // centro del bloque de texto
+      lineas.forEach((s, k) => {
+        const d = ((n - 1) / 2 - k) * lh;                              // renglón 1 arriba, renglón 2 abajo
+        const sz = Math.min(size, size * maxW / Math.max(1, ancho(s, ctx.f.reg, size)) );
+        g.tr(s, bx - Math.sin(th) * d, by - Math.cos(th) * d, rot, { size: Math.max(4.8, sz), color: C.ink });
+      });
     });
   }
 
