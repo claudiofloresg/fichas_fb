@@ -384,11 +384,15 @@ def validar_catalogo():
                                    f"{'METRICAS_PORTERO' if pos == 'Portero' else 'METRICAS'}")
                 if comp not in (None, "liga", "grupo"):
                     errores.append(f"'{pos}' / {sec} / {m}: comparación '{comp}' (usa \"liga\" o \"grupo\")")
-    for pos, lista in cfg("INFORME_TABLA", {}).items():
-        for m in lista:
-            if m not in metricas_de(pos):
-                errores.append(f"INFORME_TABLA / '{pos}': la métrica '{m}' no está en "
-                               f"{'METRICAS_PORTERO' if pos == 'Portero' else 'METRICAS'}")
+    for pos, lista in cfg("ESTADISTICAS", {}).items():
+        for k, item in enumerate(lista):
+            if not (isinstance(item, tuple) and len(item) == 3):
+                errores.append(f"ESTADISTICAS / '{pos}' / renglón {k + 1}: debe ser (Etiqueta, ARRIBA, ABAJO)")
+                continue
+            for celda in item[1:]:
+                if celda and (len(celda) != 2 or celda[1] not in ("entero", "pct", "dec")):
+                    errores.append(f"ESTADISTICAS / '{pos}' / {item[0]}: formato '{celda}' "
+                                   f"(usa \"entero\", \"pct\" o \"dec\")")
     if errores:
         print("\n[ERROR] Revisa config.py:\n  - " + "\n  - ".join(errores))
         sys.exit(1)
@@ -482,6 +486,9 @@ def leer_matrix(path, es_portero=False):
             cache[key] = float(s.mean()) if len(s) else None
         return cache[key]
 
+    def tiene(col):
+        return col in df.columns or re.sub(r"\s+", " ", col) in por_texto
+
     def crudo(col, i):
         """Valor crudo de una columna del Excel (tolera dobles espacios). None si no existe."""
         real = col if col in df.columns else por_texto.get(re.sub(r"\s+", " ", col))
@@ -494,7 +501,7 @@ def leer_matrix(path, es_portero=False):
         "path": path, "stem": stem, "label": label, "cat": cat, "titulo": titulo, "es_portero": es_portero,
         "jornadas": jornadas(stem, titulo), "df": df, "es_pumas": es_pumas,
         "minutos": minutos, "pos_cat": pos_cat, "valores": valores, "maximo": maximo, "faltan": faltan,
-        "promedio": promedio, "crudo": crudo,
+        "promedio": promedio, "crudo": crudo, "tiene": tiene,
     }
 
 
@@ -555,34 +562,27 @@ def empatar(fuentes, label, cat, candidatos, rep):
     return asignado
 
 
-def desglose_stats(src_mx, i, posicion):
-    """Informe gráfico, cuadro "Estadísticas": las stats del catálogo con su % relacionado.
-    Devuelve [[seccion, etiqueta, valor_grande, tipo_grande, dato_crudo_abajo], ...]."""
-    metricas = metricas_de(posicion)
-    norm = lambda c: re.sub(r"\s+", " ", str(c)).strip()  # noqa: E731
-    pct_de = {norm(k): v for k, v in cfg("INFORME_PORCENTAJES", {}).items()}
-    tabla = cfg("INFORME_TABLA", {}).get(posicion)
-    if tabla:                                   # catálogo propio de la tabla (config.py, INFORME_TABLA)
-        items = [(None, m) for m in tabla if m in metricas]
-    else:                                       # si la posición no está ahí: las 15 del radar
-        items = [(sec, m) for sec, its in secciones_de(posicion) for m, _ in its]
-    cols_conteo = {norm(metricas[m][0]) for _, m in items if metricas[m][1] != "porcentaje"}
-    out = []
-    for sec, m in items:
-        col, tipo = metricas[m]
-        v = src_mx["valores"][m][i]
-        v = None if v is None or (isinstance(v, float) and math.isnan(v)) else float(v)
-        if tipo == "porcentaje":
-            socios = [c for c, p in pct_de.items() if norm(p) == norm(col)]
-            if any(c in cols_conteo for c in socios):
-                continue                                  # ya sale junto con su conteo
-            crudo = src_mx["crudo"](socios[0], i) if socios else None
-            out.append([sec, re.sub(r"\s*\(%\)\s*$", "", m), num(v, 1), "porcentaje", num(crudo, 1)])
-        elif norm(col) in pct_de and src_mx["crudo"](pct_de[norm(col)], i) is not None:
-            out.append([sec, m, num(src_mx["crudo"](pct_de[norm(col)], i), 1), "porcentaje", num(v, 1)])
-        else:
-            out.append([sec, m, num(v, 1), "conteo", None])
-    return out
+_COLS_FALTANTES = set()
+
+
+def tabla_estadisticas(src_mx, i, posicion):
+    """Informe gráfico, cuadro "Estadísticas" (config.py, ESTADISTICAS).
+    Devuelve [[etiqueta, valor_arriba, formato_arriba, valor_abajo, formato_abajo], ...]
+    con los valores tal cual vienen en el Excel."""
+    filas = []
+    for etiqueta, arriba, abajo in cfg("ESTADISTICAS", {}).get(posicion, []):
+        fila = [etiqueta]
+        for celda in (arriba, abajo):
+            if not celda:
+                fila += [None, None]
+                continue
+            col, fmt = celda
+            v = src_mx["crudo"](col, i)
+            if v is None and not src_mx["tiene"](col):
+                _COLS_FALTANTES.add(f"'{col}' ({posicion}) no está en {os.path.basename(src_mx['path'])}")
+            fila += [num(v, 2), fmt]
+        filas.append(fila)
+    return filas
 
 
 def leer_carpeta(carpeta):
@@ -731,7 +731,7 @@ def main():
             informe = None
             if con_datos:
                 es_por = posicion == "Portero"
-                desglose = desglose_stats(src_mx, i, posicion)
+                tabla = tabla_estadisticas(src_mx, i, posicion)
                 zonas = None
                 if not es_por and cfg("INFORME_ZONAS"):
                     zonas = []
@@ -745,7 +745,7 @@ def main():
                         if all(v is None for v in vals):
                             continue
                         zonas.append([titulo, [num(v, 1) for v in vals], tipo])
-                informe = {"desglose": desglose, "zonas": zonas}
+                informe = {"tabla": tabla, "zonas": zonas}
 
             if con_datos:
                 nac = fecha_txt(df.at[i, C.COL_NACIMIENTO]) if C.COL_NACIMIENTO in df.columns else None
@@ -811,6 +811,7 @@ def main():
         "generado": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "modo": C.MODO_VALORES,
         "minPromedio": cfg("INFORME_MIN_MINUTOS_PROMEDIO", 270),
+        "columnasEstadisticas": cfg("ESTADISTICAS_COLUMNAS", 4),
         "secciones": C.SECCIONES,
         "competencias": competencias,
     }
@@ -846,6 +847,10 @@ def main():
         if os.path.exists(os.path.join(BASE, viejo)):
             os.remove(os.path.join(BASE, viejo))
 
+    if _COLS_FALTANTES:
+        print("  [aviso] columnas de ESTADISTICAS que no vienen en el Excel (salen como –):")
+        for c in sorted(_COLS_FALTANTES):
+            print(f"    - {c}")
     n = sum(len(c["jugadores"]) for c in competencias)
     print(f"\nListo -> {os.path.relpath(OUT_DATA, BASE)}  ({n} fichas, {os.path.getsize(OUT_DATA)/1024:.0f} KB)")
     for k in ("sin_registro", "dudosos", "sin_minutos", "sin_foto", "sin_mapa"):

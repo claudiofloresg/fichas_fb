@@ -20,7 +20,7 @@ const DISENO_INFORME = {
   foto: { x: 56, y: 60, w: 96, h: 120 },
   datos: { x: 166, y: 70, w: 180 },
   mapa: { x: 364, y: 60, w: 232, h: 160 },
-  estadisticas: { x: 612, y: 60, w: 320, yFin: 234, columnas: 5 },
+  estadisticas: { x: 612, y: 60, w: 320, yFin: 236 },   // columnas: ESTADISTICAS_COLUMNAS en config.py
   radarJugador: { cx: 176, cy: 358, r: 72, titulo: 'PERFIL DEL JUGADOR' },
   radarPromedio: { cx: 784, cy: 358, r: 72, titulo: 'VS PROMEDIO' },
   canchas: { x: 372, y: 270, w: 58, h: 86, dx: 82, dy: 108 },
@@ -264,7 +264,7 @@ const Informe = (() => {
 
     // nombres de las stats alrededor, girados siguiendo el círculo (como PyPizza);
     // en la mitad de abajo se voltean para que se lean derechos
-    const size = 5, lh = 6;
+    const size = 5.8, lh = 6.4;
     const maxW = Math.max(28, ((2 * Math.PI * (r + 8)) / N) * 0.95);   // ancho del sector a esa altura
     const envolver = (txt) => {
       const out = [];
@@ -402,33 +402,34 @@ const Informe = (() => {
       t('Sin mapa de calor', M.x + M.w / 2, my + mh / 2, { font: f.ital, size: 8.5, color: C.faint, align: 'center' });
     }
 
-    // ---------- estadísticas: minutos, partidos, % min. posibles + las stats del catálogo
-    //   con % relacionado: % en grande y el dato crudo abajo; sin %: el dato crudo
+    // ---------- estadísticas (config.py, ESTADISTICAS): número grande arriba, chico abajo, etiqueta
+    //   "ganadas": % arriba y total de intentos abajo · conteos: total arriba · minutos: partidos abajo
     const Es = D.estadisticas;
     t('ESTADÍSTICAS', Es.x + Es.w / 2, Es.y + 7, { font: f.bold, size: 7.5, color: C.navy, align: 'center' });
-    const maxMin = comp.jornadas ? (comp.jornadas[1] - comp.jornadas[0] + 1) * 90 : null;
     const inf = jug.informe || {};
-    const ordenSec = filasRadar(jug).secs;
-    const desglose = [...(inf.desglose || [])].sort((a, b) => ordenSec.indexOf(a[0]) - ordenSec.indexOf(b[0]));
-    const datos = [
-      ['Minutos', jug.minutos.toLocaleString('es-MX'), null],
-      ['Partidos', String(jug.partidos), null],
-      ['% min. posibles', maxMin ? `${Math.round((jug.minutos / maxMin) * 100)}%` : '–', null],
-      ...desglose.map(([, lab, v, tipo, crudo]) => [lab, fmtV(v, tipo), crudo != null ? fmtV(crudo) : null]),
-    ];
-    const nc = Es.columnas, cw = Es.w / nc;
-    const filasEs = Math.ceil(datos.length / nc);
-    const rh = Math.min(58, (Es.yFin - (Es.y + 16)) / filasEs);
-    const big = Math.min(19, rh * 0.36);
-    datos.forEach(([lab, val, crudo], k) => {
+    const fmtCelda = (v, fmt) => {
+      if (v === null || v === undefined) return '–';
+      if (fmt === 'pct') return `${Math.round(v)}%`;
+      if (fmt === 'dec') return v.toFixed(2);
+      return Number.isInteger(v) ? v.toLocaleString('es-MX') : String(v);
+    };
+    const datos = (inf.tabla && inf.tabla.length)
+      ? inf.tabla.map(([lab, va, fa, vb, fb]) => [lab, fmtCelda(va, fa), fb ? fmtCelda(vb, fb) : null])
+      : [['Minutos Jugados', jug.minutos.toLocaleString('es-MX'), String(jug.partidos)]];
+    const nc = meta.columnasEstadisticas || 4, cw = Es.w / nc;
+    const filasEs = Math.max(3, Math.ceil(datos.length / nc));
+    const rh = (Es.yFin - (Es.y + 16)) / filasEs;
+    const big = Math.min(21, rh * 0.4);
+    datos.forEach(([lab, val, abajo], k) => {
       const xc = Es.x + cw * (k % nc) + cw / 2;
-      let y = Es.y + 16 + Math.floor(k / nc) * rh + big * 0.9;
-      t(val, xc, y, { font: f.bold, size: big, color: C.gold, align: 'center', maxW: cw - 4, minSize: 9 });
-      y += 7.5;
-      if (crudo != null) { t(crudo, xc, y, { font: f.bold, size: 6.4, color: C.navy, align: 'center' }); y += 6.8; }
-      partir(lab, 15).slice(0, 2).forEach((s) => {
-        t(s, xc, y, { size: 5.8, color: C.soft, align: 'center', maxW: cw - 3, minSize: 4.8 });
-        y += 6.4;
+      let y = Es.y + 16 + Math.floor(k / nc) * rh + big * 0.85;
+      t(val, xc, y, { font: f.bold, size: big, color: C.gold, align: 'center', maxW: cw - 6, minSize: 10 });
+      y += 9.5;
+      if (abajo != null) t(abajo, xc, y, { font: f.bold, size: 7, color: C.faint, align: 'center' });
+      y += 9;                                               // mismo lugar aunque no lleve número abajo
+      partir(lab, 16).slice(0, 2).forEach((s) => {
+        t(s, xc, y, { size: 6.4, color: C.navy, align: 'center', maxW: cw - 4, minSize: 5 });
+        y += 7;
       });
     });
 
@@ -471,6 +472,7 @@ const Informe = (() => {
     }
 
     // ---------- pie de página (debajo de la línea azul)
+    t(D.credito, P.w - 38, D.yPie, { font: f.bold, size: 7, color: C.navy, align: 'right' });
   }
 
   async function generar(jugadores, comp, meta) {

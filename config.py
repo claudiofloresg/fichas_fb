@@ -122,6 +122,7 @@ METRICAS = {
     "Duelos ofensivos ganados":     ("Regates acertados", "conteo"),
     "Duelos ofensivos (%)":         ("% de duelos ofensivos ganados", "porcentaje"),
     "Faltas recibidas":             ("Faltas recibidas", "conteo"),
+    "Pases en profundidad":         ("Pases filtrados", "conteo"),
     # --- Posesión ---
     "Pases":                        ("Pases", "conteo"),
     "Pases acertados":              ("Pases acertados", "conteo"),
@@ -373,23 +374,113 @@ MAPA_LADO_MAX = 900             # px, el mapa se reduce sin recortar
 # grupo de posición, igual que el máximo de cada stat) que tengan al menos estos minutos.
 INFORME_MIN_MINUTOS_PROMEDIO = 270
 
-# "Estadísticas": las 15 stats del catálogo. Si la stat tiene un % relacionado en el
-# Excel, se muestra el % en grande y el dato crudo abajo (ej. 23% / 22 Duelos ofensivos ganados).
-# Si no tiene %, se muestra el dato crudo. Si la stat (%) y su conteo están los dos en el
-# catálogo, salen juntos en un solo dato.
-#   columna del conteo en el Excel  ->  columna del % en el Excel
-INFORME_PORCENTAJES = {
-    "Regates acertados":         "% de duelos ofensivos ganados",
-    "Duelos defensivos ganados": "% de duelos defensivos ganados",
-    "Pases acertados":           "% total de pases acertados",
-    "Pases acertados 1/4":       "% de pases acertados 1/4",
-    "Pases acertados 2/4":       "% de pases acertados 2/4",
-    "Pases acertados 3/4":       "% de pases acertados 3/4",
-    "Pases acertados 4/4":       "% de pases acertados 4/4",
-    "Centros a destino":         "% de centros totales acertados",
-    "Centros":                   "% de centros totales acertados",
-    "Tiros a gol de cabeza":     "% de tiros con destino a portería de cabeza",
+# -----------------------------------------------------------------------------
+# ESTADÍSTICAS (cuadro superior derecho del informe) — UN CATÁLOGO POR POSICIÓN
+# -----------------------------------------------------------------------------
+# Es independiente de los radares y de las barras (esos salen del catálogo de la sección 4).
+# Cada stat:  (Etiqueta, ARRIBA, ABAJO)
+#   ARRIBA = número grande;  ABAJO = número chico (None = no lleva)
+#   ARRIBA/ABAJO = (columna del Excel GolStats, formato)
+#     formato: "entero" -> 593     "pct" -> 54%     "dec" -> 0.34 (2 decimales)
+#
+# Regla general (solo datos tal cual vienen en el Excel, nada calculado):
+#   - "ganadas":  arriba el % de ganados/acertados,  abajo el TOTAL de intentos
+#   - conteos:    arriba el TOTAL,  sin número abajo (GolStats no trae por 90)
+#   - Minutos:    arriba los minutos, abajo los partidos
+#
+# Todas las posiciones llevan la MISMA cantidad (12 = cuadro de 4 x 3).
+# Para quitar/poner/reordenar una stat solo mueve el nombre en la lista de la posición.
+# Los porteros salen de la Matrix de porteros (sus columnas son otras).
+_E, _P, _D = "entero", "pct", "dec"
+
+def _ganadas(col_pct, col_total, etiqueta):   # % arriba, total de intentos abajo
+    return (etiqueta, (col_pct, _P), (col_total, _E))
+
+def _total(col, etiqueta):                    # total arriba, nada abajo
+    return (etiqueta, (col, _E), None)
+
+MINUTOS = ("Minutos Jugados", ("Minutos jugados", _E), ("Partidos jugados", _E))
+GOLES = _total("Goles", "Goles")
+XG = ("xG", ("xG", _D), None)
+ASISTENCIAS = _total("Asistencias", "Asistencias")
+OCASIONES = _total("Ocasión generada", "Ocasiones Generadas")          # ≈ asistencias a tiro
+GRAN_OCASION = _total("Gran ocasión", "Grandes Ocasiones")
+GOLES_CABEZA = _total("Goles de cabeza", "Goles de Cabeza")
+DUELOS_OF = _ganadas("% de duelos ofensivos ganados", "Regates", "Duelos Ofensivos")   # en GolStats = regates
+DUELOS_DEF = _ganadas("% de duelos defensivos ganados", "Duelos defensivos", "Duelos Defensivos")
+DUELOS_AER = ("Duelos Aéreos Ganados", ("Duelos aéreos ganados", _E), ("Duelos aéreos", _E))  # GolStats no trae %
+CENTROS = _ganadas("% de centros totales acertados", "Centros", "Centros")
+PASES = _ganadas("% total de pases acertados", "Pases", "Pases Precisos")
+# pases por cuarto: GolStats no trae el total de intentos por cuarto -> abajo van los acertados
+PASES_2_4 = ("Pases Precisos 2/4", ("% de pases acertados 2/4", _P), ("Pases acertados 2/4", _E))
+PASES_3_4 = ("Pases Precisos 3/4", ("% de pases acertados 3/4", _P), ("Pases acertados 3/4", _E))
+PASES_4_4 = ("Pases Precisos 4/4", ("% de pases acertados 4/4", _P), ("Pases acertados 4/4", _E))
+PASES_PROFUNDIDAD = _total("Pases filtrados", "Pases en Profundidad")
+TIROS = ("Tiros a Portería", ("Tiros a destino", _E), ("Tiros a gol", _E))  # sin % general en GolStats
+TIROS_DENTRO = _ganadas("% de tiros con destino a portería dentro del área", "Tiros a gol dentro del área", "Tiros Dentro del Área")
+TIROS_CABEZA = _ganadas("% de tiros con destino a portería de cabeza", "Tiros a gol de cabeza", "Tiros de Cabeza")
+FALTAS_RECIBIDAS = _total("Faltas recibidas", "Faltas Recibidas")
+FALTAS_COMETIDAS = _total("Faltas cometidas", "Faltas Cometidas")
+INTERCEPCIONES = _total("Intercepciones", "Intercepciones")
+DESPEJES = _total("Despejes", "Despejes")
+RECUPERACIONES = _total("Recuperaciones de balón", "Balones Recuperados")
+RECUP_RIVAL = _total("Recuperaciones de balón cancha rival", "Recuperados Cancha Rival")
+PERDIDAS = _total("Pérdidas por despojo", "Pérdidas")
+# --- porteros (Matrix de porteros) ---
+GOLES_RECIBIDOS = _total("Goles recibidos", "Goles Recibidos")
+PORTERIAS_CERO = _total("Porterías en cero", "Porterías en Cero")
+ATAJADAS = _total("Paradas del Portero", "Atajadas")
+ATAJADAS_SIN_REBOTE = _total("Paradas del portero atrapando el balón", "Atajadas sin Rebote")
+ATAJADAS_CON_REBOTE = _total("Paradas del portero no se queda con el balón", "Atajadas con Rebote")
+PENALES_ATAJADOS = ("Penales Atajados", ("Penales enfrentados por el portero atajado", _E),
+                    ("Penales enfrentados por el portero", _E))
+RECHACES = _total("Puñetazos del portero", "Rechaces con el Puño")
+SALIDAS = _total("Salidas del portero fuera del área", "Salidas Fuera del Área")
+PASES_GK = _total("Pases del portero acertados", "Pases Precisos")
+PASES_LARGOS_GK = _total("Pases balón largo acertados", "Pases Largos Precisos")
+SAQUES_MANO = _total("Saque con manos del portero  acertado", "Saques con la Mano")   # doble espacio en el Excel
+SAQUES_META = _total("Saque de meta largo / por alto acertado", "Saques de Meta Largos")
+
+_EST_LATERAL = [
+    MINUTOS, CENTROS, DUELOS_OF, DUELOS_DEF,
+    ASISTENCIAS, OCASIONES, PASES_3_4, PASES_4_4,
+    INTERCEPCIONES, RECUPERACIONES, RECUP_RIVAL, FALTAS_RECIBIDAS,
+]
+_EST_CONTENCION = [
+    MINUTOS, INTERCEPCIONES, DUELOS_DEF, OCASIONES,
+    DUELOS_AER, DUELOS_OF, PASES_PROFUNDIDAD, PASES,
+    RECUPERACIONES, PASES_3_4, CENTROS, TIROS,
+]
+_EST_EXTREMO = [
+    MINUTOS, GOLES, ASISTENCIAS, OCASIONES,
+    XG, CENTROS, DUELOS_OF, TIROS,
+    PASES_3_4, PASES_4_4, RECUP_RIVAL, FALTAS_RECIBIDAS,
+]
+ESTADISTICAS = {
+    "Portero": [
+        MINUTOS, GOLES_RECIBIDOS, PORTERIAS_CERO, ATAJADAS,
+        ATAJADAS_SIN_REBOTE, ATAJADAS_CON_REBOTE, PENALES_ATAJADOS, RECHACES,
+        SALIDAS, PASES_GK, PASES_LARGOS_GK, SAQUES_MANO,
+    ],
+    "Defensa central": [
+        MINUTOS, INTERCEPCIONES, DUELOS_DEF, DUELOS_AER,
+        DESPEJES, DUELOS_OF, PASES, PASES_2_4,
+        PASES_3_4, RECUPERACIONES, PERDIDAS, FALTAS_COMETIDAS,
+    ],
+    "Lateral por derecha": _EST_LATERAL,
+    "Lateral por izquierda": _EST_LATERAL,
+    "Volante defensivo": _EST_CONTENCION,
+    "Volante ofensivo": _EST_CONTENCION,
+    "Volante por derecha": _EST_EXTREMO,
+    "Volante por izquierda": _EST_EXTREMO,
+    "Delantero": [
+        MINUTOS, GOLES, XG, ASISTENCIAS,
+        TIROS, DUELOS_AER, DUELOS_OF, PASES_4_4,
+        TIROS_DENTRO, DUELOS_DEF, FALTAS_RECIBIDAS, GRAN_OCASION,
+    ],
 }
+# Columnas del cuadro (4 -> 12 stats = 4 x 3; 16 stats = 4 x 4)
+ESTADISTICAS_COLUMNAS = 4
 
 # Canchitas por cuartos (1/4 = cuarto propio ... 4/4 = cuarto rival).
 #   (título, columna base del Excel sin " 1/4", tipo)

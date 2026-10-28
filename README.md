@@ -154,9 +154,10 @@ respetan el formato elegido.
   del jugador; colores por tercios en orden: Ofensiva, Posesión, Defensiva.
 - Radar vs promedio: azul = jugador, naranja = promedio de la liga o de su grupo, solo jugadores con
   `INFORME_MIN_MINUTOS_PROMEDIO` minutos o más (`config.py`, sección 7).
-- Estadísticas: minutos, partidos, % de minutos posibles y las 15 stats del catálogo. Si una stat tiene
-  un % en el Excel, sale el % en grande y el dato crudo abajo; la relación stat → % está en
-  `INFORME_PORCENTAJES` (`config.py`, sección 7). Sin %, sale el dato crudo.
+- Estadísticas (cuadro de arriba a la derecha): su propio catálogo por posición, `ESTADISTICAS`
+  en `config.py` (sección 7), independiente de los radares. Cada stat es (Etiqueta, ARRIBA, ABAJO):
+  en las "ganadas" arriba va el % y abajo el total de intentos; en los conteos, el total arriba.
+  Todas las posiciones llevan 12 (cuadro de 4 x 3). Solo datos tal cual vienen en el Excel.
 - Canchitas por cuartos: `INFORME_ZONAS` (`config.py`, sección 7).
 
 ## 6. Probar en tu compu antes de publicar
