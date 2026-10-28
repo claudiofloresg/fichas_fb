@@ -471,6 +471,7 @@ const Informe = (() => {
     }
 
     // ---------- pie de página (debajo de la línea azul)
+  }
 
   async function generar(jugadores, comp, meta) {
     const ctx = await nuevoDoc();
