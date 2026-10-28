@@ -471,10 +471,6 @@ const Informe = (() => {
     }
 
     // ---------- pie de página (debajo de la línea azul)
-    t(`Fuente: ${D.fuente} · ${comp.label}${comp.jornadas ? ' · ' + jornadasTxt(comp) : ''} · Datos al ${meta.generado.split(' ')[0]}`,
-      38, D.yPie, { size: 6.4, color: C.faint, maxW: 300 });
-    t(D.credito, P.w - 38, D.yPie, { font: f.bold, size: 7, color: C.navy, align: 'right' });
-  }
 
   async function generar(jugadores, comp, meta) {
     const ctx = await nuevoDoc();
