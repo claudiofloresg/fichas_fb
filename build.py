@@ -384,6 +384,11 @@ def validar_catalogo():
                                    f"{'METRICAS_PORTERO' if pos == 'Portero' else 'METRICAS'}")
                 if comp not in (None, "liga", "grupo"):
                     errores.append(f"'{pos}' / {sec} / {m}: comparación '{comp}' (usa \"liga\" o \"grupo\")")
+    for pos, lista in cfg("INFORME_TABLA", {}).items():
+        for m in lista:
+            if m not in metricas_de(pos):
+                errores.append(f"INFORME_TABLA / '{pos}': la métrica '{m}' no está en "
+                               f"{'METRICAS_PORTERO' if pos == 'Portero' else 'METRICAS'}")
     if errores:
         print("\n[ERROR] Revisa config.py:\n  - " + "\n  - ".join(errores))
         sys.exit(1)
@@ -556,7 +561,11 @@ def desglose_stats(src_mx, i, posicion):
     metricas = metricas_de(posicion)
     norm = lambda c: re.sub(r"\s+", " ", str(c)).strip()  # noqa: E731
     pct_de = {norm(k): v for k, v in cfg("INFORME_PORCENTAJES", {}).items()}
-    items = [(sec, m) for sec, its in secciones_de(posicion) for m, _ in its]
+    tabla = cfg("INFORME_TABLA", {}).get(posicion)
+    if tabla:                                   # catálogo propio de la tabla (config.py, INFORME_TABLA)
+        items = [(None, m) for m in tabla if m in metricas]
+    else:                                       # si la posición no está ahí: las 15 del radar
+        items = [(sec, m) for sec, its in secciones_de(posicion) for m, _ in its]
     cols_conteo = {norm(metricas[m][0]) for _, m in items if metricas[m][1] != "porcentaje"}
     out = []
     for sec, m in items:

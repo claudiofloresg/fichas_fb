@@ -271,9 +271,6 @@ const Ficha = (() => {
     // ---------- pie de página (el crédito va hasta el final)
     const yp = 734;
     l(M, yp, R, yp, C.line, 0.75);
-    t(`Fuente: ${DISENO.fuente} · ${comp.label}${comp.jornadas ? ' · ' + jornadasTxt(comp) : ''}`, M, yp + 12,
-      { size: 7, color: C.faint, maxW: 250 });
-    t(`Datos al ${meta.generado.split(' ')[0]}`, R, yp + 12, { size: 7, color: C.faint, align: 'right' });
     const modoTxt = meta.modo === 'per90' ? 'valores por 90 minutos' : 'valores totales';
     t(`Barra: valor del jugador respecto al máximo de la liga o de su grupo de posición (${modoTxt}).`, M, yp + 24,
       { size: 7, color: C.faint });
