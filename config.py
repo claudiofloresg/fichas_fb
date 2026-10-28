@@ -416,7 +416,7 @@ PASES_2_4 = ("Pases Precisos 2/4", ("% de pases acertados 2/4", _P), ("Pases ace
 PASES_3_4 = ("Pases Precisos 3/4", ("% de pases acertados 3/4", _P), ("Pases acertados 3/4", _E))
 PASES_4_4 = ("Pases Precisos 4/4", ("% de pases acertados 4/4", _P), ("Pases acertados 4/4", _E))
 PASES_PROFUNDIDAD = _total("Pases filtrados", "Pases en Profundidad")
-TIROS = ("Tiros a Portería", ("Tiros a destino", _E), ("Tiros a gol", _E))  # sin % general en GolStats
+TIROS = ("Tiros", ("Tiros a destino", _E), ("Tiros a gol", _E))  # sin % general en GolStats
 TIROS_DENTRO = _ganadas("% de tiros con destino a portería dentro del área", "Tiros a gol dentro del área", "Tiros Dentro del Área")
 TIROS_CABEZA = _ganadas("% de tiros con destino a portería de cabeza", "Tiros a gol de cabeza", "Tiros de Cabeza")
 FALTAS_RECIBIDAS = _total("Faltas recibidas", "Faltas Recibidas")
@@ -424,7 +424,7 @@ FALTAS_COMETIDAS = _total("Faltas cometidas", "Faltas Cometidas")
 INTERCEPCIONES = _total("Intercepciones", "Intercepciones")
 DESPEJES = _total("Despejes", "Despejes")
 RECUPERACIONES = _total("Recuperaciones de balón", "Balones Recuperados")
-RECUP_RIVAL = _total("Recuperaciones de balón cancha rival", "Recuperados Cancha Rival")
+RECUP_RIVAL = _total("Recuperaciones de balón cancha rival", "Recuperaciones Cancha Rival")
 PERDIDAS = _total("Pérdidas por despojo", "Pérdidas")
 # --- porteros (Matrix de porteros) ---
 GOLES_RECIBIDOS = _total("Goles recibidos", "Goles Recibidos")
